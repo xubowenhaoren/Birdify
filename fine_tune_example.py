@@ -18,16 +18,16 @@ from cnn_finetune import make_model
 parser = argparse.ArgumentParser(description='cnn_finetune cifar 10 example')
 parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 32)')
-parser.add_argument('--test_helper-batch-size', type=int, default=64, metavar='N',
+parser.add_argument('--test-batch-size', type=int, default=64, metavar='N',
                     help='input batch size for testing (default: 64)')
-parser.add_argument('--epochs', type=int, default=100, metavar='N',
+parser.add_argument('--epochs', type=int, default=1, metavar='N',
                     help='number of epochs to train (default: 100)')
 parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                     help='learning rate (default: 0.01)')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                     help='SGD momentum (default: 0.9)')
-parser.add_argument('--no-cuda', action='store_true', default=False,
-                    help='disables CUDA training')
+# parser.add_argument('--no-cuda', action='store_true', default=False,
+#                     help='disables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=100, metavar='N',
@@ -38,8 +38,9 @@ parser.add_argument('--dropout-p', type=float, default=0.2, metavar='D',
                     help='Dropout probability (default: 0.2)')
 
 args = parser.parse_args()
-use_cuda = not args.no_cuda and torch.cuda.is_available()
-device = torch.device('cuda' if use_cuda else 'cpu')
+# use_cuda = not args.no_cuda and torch.cuda.is_available()
+# device = torch.device('cuda' if use_cuda else 'cpu')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def train(model, epoch, optimizer, train_loader, criterion=nn.CrossEntropyLoss()):
@@ -118,7 +119,7 @@ def hello():
         root='./data', train=False, download=True, transform=transform
     )
     test_loader = torch.utils.data.DataLoader(
-        test_set, batch_size=args.batch_size, shuffle=False, num_workers=2
+        test_set, batch_size=args.test_batch_size, shuffle=False, num_workers=2
     )
 
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
@@ -129,9 +130,9 @@ def hello():
     # Train
     for epoch in range(1, args.epochs + 1):
         # Decay Learning Rate
-        scheduler.step(epoch)
         train(model, epoch, optimizer, train_loader)
-        test_helper(model, test_loader)
+        scheduler.step()
+    test_helper(model, test_loader)
 
 
 if __name__ == '__main__':
