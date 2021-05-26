@@ -1,23 +1,41 @@
+import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
+from matplotlib import pyplot as plt
 from tqdm import tqdm
+import argparse
+from cnn_finetune import make_model
 
 
 def get_bird_data(augmentation=0):
+    model = make_model(
+        model_name,
+        pretrained=True,
+        num_classes=555,
+        dropout_p=args.dropout_p,
+        input_size=(128, 128)
+    )
+    model = model.to(device)
     transform_train = transforms.Compose([
         transforms.Resize(128),
         transforms.RandomCrop(128, padding=8, padding_mode='edge'),  # Take 128x128 crops from padded images
         transforms.RandomHorizontalFlip(),  # 50% of time flip image along y-axis
         transforms.ToTensor(),
+        transforms.Normalize(
+            mean=model.original_model_info.mean,
+            std=model.original_model_info.std)
     ])
 
     transform_test = transforms.Compose([
         transforms.Resize(128),
         transforms.CenterCrop(128),
         transforms.ToTensor(),
+        transforms.Normalize(
+            mean=model.original_model_info.mean,
+            std=model.original_model_info.std)
     ])
     trainset = torchvision.datasets.ImageFolder(root='train', transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
@@ -30,38 +48,18 @@ def get_bird_data(augmentation=0):
     class_to_idx = trainset.class_to_idx
     idx_to_class = {int(v): int(k) for k, v in class_to_idx.items()}
     idx_to_name = {k: classes[v] for k, v in idx_to_class.items()}
-    return {'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
+    return model, {'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
 
 
-def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay=0.0005,
-          state=None, schedule={}):
+def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay=0.0005):
     net.to(device)
     net.train()
     losses = []
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum, weight_decay=decay)
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
 
-    # Load previous training state
-    if state:
-        net.load_state_dict(state['net'])
-        optimizer.load_state_dict(state['optimizer'])
-        start_epoch = state['epoch']
-        losses = state['losses']
-
-    # Fast forward lr schedule through already trained epochs
-    for epoch in range(start_epoch):
-        if epoch in schedule:
-            print("Learning rate: %f" % schedule[epoch])
-            for g in optimizer.param_groups:
-                g['lr'] = schedule[epoch]
     for epoch in range(start_epoch, epochs):
-
-        # Update learning rate when scheduled
-        if epoch in schedule:
-            print("Learning rate: %f" % schedule[epoch])
-            for g in optimizer.param_groups:
-                g['lr'] = schedule[epoch]
-
         progress_bar = tqdm(enumerate(dataloader))
         for i, batch in progress_bar:
             inputs, labels = batch[0].to(device), batch[1].to(device)
@@ -76,6 +74,7 @@ def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay
             losses.append(loss.item())
             progress_bar.set_description(str(("epoch", epoch, "i", i, "loss", loss.item())))
             i += 1
+        scheduler.step()
     return losses
 
 
@@ -85,9 +84,7 @@ def predict(net, dataloader, ofname):
     net.to(device)
     net.eval()
     with torch.no_grad():
-        for i, (images, labels) in enumerate(dataloader, 0):
-            if i % 100 == 0:
-                print(i)
+        for i, (images, labels) in tqdm(enumerate(dataloader)):
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
@@ -96,12 +93,44 @@ def predict(net, dataloader, ofname):
     out.close()
 
 
+def get_arguments():
+    parser = argparse.ArgumentParser(description='cnn_finetune cifar 10 example')
+    parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for training (default: 32)')
+    parser.add_argument('--test-batch-size', type=int, default=64, metavar='N',
+                        help='input batch size for testing (default: 64)')
+    parser.add_argument('--epochs', type=int, default=100, metavar='N',
+                        help='number of epochs to train (default: 100)')
+    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
+                        help='learning rate (default: 0.01)')
+    parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
+                        help='SGD momentum (default: 0.9)')
+    # parser.add_argument('--no-cuda', action='store_true', default=False,
+    #                     help='disables CUDA training')
+    parser.add_argument('--seed', type=int, default=1, metavar='S',
+                        help='random seed (default: 1)')
+    parser.add_argument('--log-interval', type=int, default=100, metavar='N',
+                        help='how many batches to wait before logging training status')
+    parser.add_argument('--model-name', type=str, default='resnet50', metavar='M',
+                        help='model name (default: resnet50)')
+    parser.add_argument('--dropout-p', type=float, default=0.2, metavar='D',
+                        help='Dropout probability (default: 0.2)')
+    return parser.parse_args()
+
+
+def smooth(x, size):
+    return np.convolve(x, np.ones(size)/size, mode='valid')
+
+
 if __name__ == '__main__':
+    args = get_arguments()
+    model_name = args.model_name
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device", device)
-    data = get_bird_data()
-    resnet = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=True)
-    resnet.fc = nn.Linear(512, 555)
+    model, data = get_bird_data()
+    # resnet = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=True)
+    # resnet.fc = nn.Linear(512, 555)
 
-    losses = train(resnet, data['train'], epochs=5, lr=.01)
-    predict(resnet, data['test'], "preds.csv")
+    losses = train(model, data['train'], epochs=1, lr=args.lr)
+    predict(model, data['test'], "preds.csv")
+    plt.plot(smooth(losses, 50))
