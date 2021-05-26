@@ -9,6 +9,8 @@ from tqdm import tqdm
 import argparse
 from cnn_finetune import make_model
 
+image_dimension = 256
+batch_size = 32
 
 def get_bird_data(augmentation=0):
     model = make_model(
@@ -16,12 +18,12 @@ def get_bird_data(augmentation=0):
         pretrained=True,
         num_classes=555,
         dropout_p=args.dropout_p,
-        input_size=(128, 128)
+        input_size=(image_dimension, image_dimension)
     )
     model = model.to(device)
     transform_train = transforms.Compose([
-        transforms.Resize(128),
-        transforms.RandomCrop(128, padding=8, padding_mode='edge'),  # Take 128x128 crops from padded images
+        transforms.Resize(image_dimension),
+        transforms.RandomCrop(image_dimension, padding=8, padding_mode='edge'),  # Take 128x128 crops from padded images
         transforms.RandomHorizontalFlip(),  # 50% of time flip image along y-axis
         transforms.ToTensor(),
         transforms.Normalize(
@@ -30,15 +32,15 @@ def get_bird_data(augmentation=0):
     ])
 
     transform_test = transforms.Compose([
-        transforms.Resize(128),
-        transforms.CenterCrop(128),
+        transforms.Resize(image_dimension),
+        transforms.CenterCrop(image_dimension),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=model.original_model_info.mean,
             std=model.original_model_info.std)
     ])
     trainset = torchvision.datasets.ImageFolder(root='train', transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=2)
     testset = torchvision.datasets.ImageFolder(root='test', transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
 
@@ -111,7 +113,7 @@ def get_arguments():
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--model-name', type=str, default='resnet50', metavar='M',
+    parser.add_argument('--model-name', type=str, default='resnet101', metavar='M',
                         help='model name (default: resnet50)')
     parser.add_argument('--dropout-p', type=float, default=0.2, metavar='D',
                         help='Dropout probability (default: 0.2)')
@@ -131,6 +133,6 @@ if __name__ == '__main__':
     # resnet = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=True)
     # resnet.fc = nn.Linear(512, 555)
 
-    losses = train(model, data['train'], epochs=1, lr=args.lr)
+    losses = train(model, data['train'], epochs=25, lr=args.lr)
     predict(model, data['test'], "preds.csv")
     plt.plot(smooth(losses, 50))
