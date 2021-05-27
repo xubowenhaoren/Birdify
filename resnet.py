@@ -9,8 +9,8 @@ from tqdm import tqdm
 import argparse
 from cnn_finetune import make_model
 
-image_dimension = 256
-batch_size = 32
+image_dimension = 300
+batch_size = 25
 
 def get_bird_data(augmentation=0):
     model = make_model(
@@ -133,6 +133,6 @@ if __name__ == '__main__':
     # resnet = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=True)
     # resnet.fc = nn.Linear(512, 555)
 
-    losses = train(model, data['train'], epochs=25, lr=args.lr)
+    losses = train(model, data['train'], epochs=30, lr=args.lr)
     predict(model, data['test'], "preds.csv")
     plt.plot(smooth(losses, 50))
