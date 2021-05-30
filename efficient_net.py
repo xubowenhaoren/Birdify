@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 import efficient_net_v2
 
-image_dimension = 440
+image_dimension = 480
 batch_size = 8
 
 
@@ -90,9 +90,7 @@ def predict(net, dataloader, ofname):
     net.to(device)
     net.eval()
     with torch.no_grad():
-        for i, (images, labels) in enumerate(dataloader, 0):
-            if i % 100 == 0:
-                print(i)
+        for i, (images, labels) in tqdm(enumerate(dataloader)):
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
