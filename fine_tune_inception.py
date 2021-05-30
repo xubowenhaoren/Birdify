@@ -23,7 +23,6 @@ def get_bird_data(augmentation=0):
     model = model.to(device)
     transform_train = transforms.Compose([
         transforms.Resize(image_dimension),
-        transforms.RandomCrop(image_dimension, padding=8, padding_mode='edge'),  # Take 128x128 crops from padded images
         transforms.RandomHorizontalFlip(),  # 50% of time flip image along y-axis
         transforms.ToTensor(),
         transforms.Normalize(
