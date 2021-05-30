@@ -9,7 +9,7 @@ from tqdm import tqdm
 import argparse
 from cnn_finetune import make_model
 
-image_dimension = 380
+image_dimension = 440
 batch_size = 16
 
 def get_bird_data(augmentation=0):
@@ -113,7 +113,7 @@ def get_arguments():
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--model-name', type=str, default='resnet101', metavar='M',
+    parser.add_argument('--model-name', type=str, default='inception_v4', metavar='M',
                         help='model name (default: resnet50)')
     parser.add_argument('--dropout-p', type=float, default=0.2, metavar='D',
                         help='Dropout probability (default: 0.2)')
