@@ -4,17 +4,15 @@ import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
-from matplotlib import pyplot as plt
 from tqdm import tqdm
 import argparse
 from cnn_finetune import make_model
-from sklearn.model_selection import RepeatedKFold
-from sklearn.model_selection import cross_val_score
 
-image_dimension = 512
-batch_size = 4
-num_workers = 6
+image_dimension = 440
+batch_size = 16
+num_workers = 4
 num_classes = 555
+
 
 def get_bird_data(augmentation=0):
     model = make_model(
@@ -43,13 +41,13 @@ def get_bird_data(augmentation=0):
             mean=model.original_model_info.mean,
             std=model.original_model_info.std)
     ])
-    trainset = torchvision.datasets.ImageFolder(root='birds/train', transform=transform_train)
+    trainset = torchvision.datasets.ImageFolder(root='train', transform=transform_train)
 
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    testset = torchvision.datasets.ImageFolder(root='birds/test', transform=transform_test)
+    testset = torchvision.datasets.ImageFolder(root='test', transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=num_workers)
 
-    classes = open("birds/names.txt").read().strip().split("\n")
+    classes = open("names.txt").read().strip().split("\n")
 
     # Backward mapping to original class ids (from folder names) and species name (from names.txt)
     class_to_idx = trainset.class_to_idx
@@ -65,7 +63,7 @@ def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
-
+    acc = 0.0
     for epoch in range(start_epoch, epochs):
         progress_bar = tqdm(enumerate(dataloader))
         for i, batch in progress_bar:
@@ -80,15 +78,13 @@ def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay
             optimizer.step()  # takes a step in gradient direction
 
             losses.append(loss.item())
-            if i % 1 == 0:  # print every 10 mini-batches
+            if i % 100 == 0:
                 # see predicted result
                 softmax = torch.exp(outputs).cpu()
                 prob = list(softmax.detach().numpy())
                 predictions = np.argmax(prob, axis=1)
                 acc = accuracy(predictions, batch[1].numpy())
-                progress_bar.set_description(str(("epoch", epoch, "i", i, "acc", acc, "loss", loss.item())))
-            else:
-                progress_bar.set_description(str(("epoch", epoch, "i", i, "loss", loss.item())))
+            progress_bar.set_description(str(("epoch", epoch, "i", i, "acc", acc, "loss", loss.item())))
 
         scheduler.step()
     return losses
@@ -134,19 +130,15 @@ def get_arguments():
     return parser.parse_args()
 
 
-def smooth(x, size):
-    return np.convolve(x, np.ones(size)/size, mode='valid')
-
 def accuracy(y_pred, y):
-    return np.sum(y_pred==y).item()/y.shape[0]
+    return np.sum(y_pred == y).item()/y.shape[0]
+
 
 # define a cross validation function
 def crossvalid(model, dataset, lr, k_fold):
     total_size = len(dataset)
     fraction = 1 / k_fold
     seg = int(total_size * fraction)
-    # tr:train,val:valid; r:right,l:left;  eg: trrr: right index of right side train subset
-    # index: [trll,trlr],[vall,valr],[trrl,trrr]
     train_loss = 0
     val_loss = 0
     for i in range(k_fold):
@@ -156,9 +148,6 @@ def crossvalid(model, dataset, lr, k_fold):
         valr = i * seg + seg
         trrl = valr
         trrr = total_size
-        # msg
-        #         print("train indices: [%d,%d),[%d,%d), test indices: [%d,%d)"
-        #               % (trll,trlr,trrl,trrr,vall,valr))
 
         train_left_indices = list(range(trll, trlr))
         train_right_indices = list(range(trrl, trrr))
@@ -174,14 +163,12 @@ def crossvalid(model, dataset, lr, k_fold):
                                                    shuffle=True, num_workers=num_workers)
         val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size,
                                                  shuffle=True, num_workers=num_workers)
-        train_loss += train(model, train_loader, epochs=1, lr=lr)
+        train_loss += train(model, train_loader, epochs=7, lr=lr)
         val_loss += train(model, val_loader, epochs=1, lr=lr)
 
     train_loss /= k_fold
     val_loss /= k_fold
     return train_loss, val_loss
-
-
 
 
 if __name__ == '__main__':
@@ -190,17 +177,6 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device", device)
     model, data = get_bird_data()
-    # resnet = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=True)
-    # resnet.fc = nn.Linear(512, num_classes)
-
-    # simply train
-    # losses = train(model, data['train'], epochs=35, lr=args.lr)
-
 
     train_loss, val_loss = crossvalid(model, data['dataset'], args.lr, 5)
-
-
-
     predict(model, data['test'], "preds.csv")
-
-    # plt.plot(smooth(losses, 50))
