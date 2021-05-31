@@ -1,17 +1,34 @@
+import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
-
 from efficientnet_pytorch import EfficientNet
 
+# If in google colab, first run
+# from google.colab import drive
+# drive.mount('/content/gdrive')
+# !pip install efficientnet_pytorch
+
+# Then run
+# import os
+# os.chdir('/content/gdrive/MyDrive/kaggle/')
+
 image_dimension = 440
-batch_size = 8
+batch_size = 12
+num_workers = 4
+num_classes = 555
+k_fold_number = 10
+run_k_fold_times = 4
+folder_location = "/content/gdrive/MyDrive/kaggle/"
 
 
 def get_bird_data(augmentation=0):
+    model = EfficientNet.from_pretrained('efficientnet-b3', num_classes=num_classes)
+    model.fc = nn.Linear(512, num_classes)
+    model = model.to(device)
     transform_train = transforms.Compose([
         transforms.Resize(image_dimension),
         transforms.RandomCrop(image_dimension, padding=8, padding_mode='edge'),  # Take 128x128 crops from padded images
@@ -24,49 +41,28 @@ def get_bird_data(augmentation=0):
         transforms.CenterCrop(image_dimension),
         transforms.ToTensor(),
     ])
-    trainset = torchvision.datasets.ImageFolder(root='train', transform=transform_train)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=2)
-    testset = torchvision.datasets.ImageFolder(root='test', transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
+    trainset = torchvision.datasets.ImageFolder(root=folder_location+'train', transform=transform_train)
 
-    classes = open("names.txt").read().strip().split("\n")
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    testset = torchvision.datasets.ImageFolder(root=folder_location+'test', transform=transform_test)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=num_workers)
+
+    classes = open(folder_location+"names.txt").read().strip().split("\n")
 
     # Backward mapping to original class ids (from folder names) and species name (from names.txt)
     class_to_idx = trainset.class_to_idx
     idx_to_class = {int(v): int(k) for k, v in class_to_idx.items()}
     idx_to_name = {k: classes[v] for k, v in idx_to_class.items()}
-    return {'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
+    return model, {'dataset': trainset, 'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
 
 
-def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay=0.0005,
-          state=None, schedule={}):
+def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
     net.to(device)
     net.train()
-    losses = []
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum, weight_decay=decay)
-
-    # Load previous training state
-    if state:
-        net.load_state_dict(state['net'])
-        optimizer.load_state_dict(state['optimizer'])
-        start_epoch = state['epoch']
-        losses = state['losses']
-
-    # Fast forward lr schedule through already trained epochs
-    for epoch in range(start_epoch):
-        if epoch in schedule:
-            print("Learning rate: %f" % schedule[epoch])
-            for g in optimizer.param_groups:
-                g['lr'] = schedule[epoch]
-    for epoch in range(start_epoch, epochs):
-
-        # Update learning rate when scheduled
-        if epoch in schedule:
-            print("Learning rate: %f" % schedule[epoch])
-            for g in optimizer.param_groups:
-                g['lr'] = schedule[epoch]
-
+    effective_epoch = (run_idx * k_fold_number) + k_fold_idx
+    acc = 0.0
+    for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
         for i, batch in progress_bar:
             inputs, labels = batch[0].to(device), batch[1].to(device)
@@ -74,14 +70,21 @@ def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay
             optimizer.zero_grad()
 
             outputs = net(inputs)
+
             loss = criterion(outputs, labels)
             loss.backward()  # autograd magic, computes all the partial derivatives
             optimizer.step()  # takes a step in gradient direction
 
-            losses.append(loss.item())
-            progress_bar.set_description(str(("epoch", epoch, "i", i, "loss", loss.item())))
-            i += 1
-    return losses
+            get_acc_limit = 100
+            if i % get_acc_limit == get_acc_limit - 1:
+                # see predicted result
+                softmax = torch.exp(outputs).cpu()
+                prob = list(softmax.detach().numpy())
+                predictions = np.argmax(prob, axis=1)
+                acc = accuracy(predictions, batch[1].numpy())
+            progress_bar.set_description(str(("epoch", effective_epoch, "i", i, "acc", acc, "loss", loss.item())))
+
+        scheduler.step()
 
 
 def predict(net, dataloader, ofname):
@@ -99,13 +102,47 @@ def predict(net, dataloader, ofname):
     out.close()
 
 
+def accuracy(y_pred, y):
+    return np.sum(y_pred == y).item()/y.shape[0]
+
+
+# define a cross validation function
+def cross_valid(model, dataset, k_fold, optimizer, scheduler, times):
+    total_size = len(dataset)
+    fraction = 1 / k_fold
+    seg = int(total_size * fraction)
+    for i in range(k_fold):
+        trll = 0
+        trlr = i * seg
+        vall = trlr
+        valr = i * seg + seg
+        trrl = valr
+        trrr = total_size
+
+        train_left_indices = list(range(trll, trlr))
+        train_right_indices = list(range(trrl, trrr))
+
+        train_indices = train_left_indices + train_right_indices
+        val_indices = list(range(vall, valr))
+
+        train_set = torch.utils.data.dataset.Subset(dataset, train_indices)
+        val_set = torch.utils.data.dataset.Subset(dataset, val_indices)
+
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size,
+                                                   shuffle=True, num_workers=num_workers)
+        val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size,
+                                                 shuffle=True, num_workers=num_workers)
+        train(model, train_loader, 1, optimizer, scheduler, i, times)
+        train(model, val_loader, 1, optimizer, scheduler, i, times)
+
+
 if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device", device)
-    data = get_bird_data()
-    num_classes = 555
-    model = EfficientNet.from_pretrained('efficientnet-b3', num_classes=num_classes)
-    model.fc = nn.Linear(512, num_classes)
-
-    losses = train(model, data['train'], epochs=35, lr=.01)
+    print("The total effective training epochs are", run_k_fold_times * k_fold_number)
+    model, data = get_bird_data()
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
+    for idx in range(run_k_fold_times):
+        cross_valid(model, data['dataset'], k_fold_number, optimizer, scheduler, idx)
     predict(model, data['test'], "preds.csv")
