@@ -9,8 +9,8 @@ import argparse
 from cnn_finetune import make_model
 
 image_dimension = 440
-batch_size = 16
-num_workers = 2
+batch_size = 12
+num_workers = 4
 num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 4
@@ -61,7 +61,6 @@ def get_bird_data(augmentation=0):
 def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
     net.to(device)
     net.train()
-    losses = []
     criterion = nn.CrossEntropyLoss()
     effective_epoch = (run_idx * k_fold_number) + k_fold_idx
     acc = 0.0
@@ -78,7 +77,6 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
             loss.backward()  # autograd magic, computes all the partial derivatives
             optimizer.step()  # takes a step in gradient direction
 
-            losses.append(loss.item())
             get_acc_limit = 100
             if i % get_acc_limit == get_acc_limit - 1:
                 # see predicted result
@@ -89,7 +87,6 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
             progress_bar.set_description(str(("epoch", effective_epoch, "i", i, "acc", acc, "loss", loss.item())))
 
         scheduler.step()
-    return losses
 
 
 def predict(net, dataloader, ofname):
