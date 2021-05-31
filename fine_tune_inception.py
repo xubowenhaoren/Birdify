@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 from cnn_finetune import make_model
+import csv
 
 # from google.colab import drive
 # drive.mount('/content/gdrive')
@@ -155,3 +156,7 @@ if __name__ == '__main__':
     for idx in range(run_k_fold_times):
         cross_valid(model, data['dataset'], k_fold_number, optimizer, scheduler, idx)
     predict(model, data['test'], "preds.csv")
+    file = open('preds.csv', 'r')
+    lines = file.readlines()
+    for row in lines:
+        print(row.strip())

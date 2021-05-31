@@ -142,3 +142,7 @@ if __name__ == '__main__':
     for idx in range(run_k_fold_times):
         cross_valid(model, data['dataset'], k_fold_number, optimizer, scheduler, idx)
     predict(model, data['test'], "preds.csv")
+    file = open('preds.csv', 'r')
+    lines = file.readlines()
+    for row in lines:
+        print(row.strip())
