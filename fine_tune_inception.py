@@ -5,23 +5,30 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
-import argparse
 from cnn_finetune import make_model
 
-image_dimension = 440
-batch_size = 12
+# from google.colab import drive
+# drive.mount('/content/gdrive')
+
+# import os
+# !pip install efficientnet_pytorch
+# !pip install cnn_finetune
+
+image_dimension = 512
+batch_size = 16
 num_workers = 4
 num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 4
+folder_location = "/content/gdrive/MyDrive/kaggle/"
 
 
 def get_bird_data(augmentation=0):
     model = make_model(
-        model_name,
+        "inception_v4",
         pretrained=True,
         num_classes=num_classes,
-        dropout_p=args.dropout_p,
+        dropout_p=0.2,
         input_size=(image_dimension, image_dimension)
     )
     model = model.to(device)
@@ -43,13 +50,13 @@ def get_bird_data(augmentation=0):
             mean=model.original_model_info.mean,
             std=model.original_model_info.std)
     ])
-    trainset = torchvision.datasets.ImageFolder(root='train', transform=transform_train)
+    trainset = torchvision.datasets.ImageFolder(root=folder_location+'train', transform=transform_train)
 
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    testset = torchvision.datasets.ImageFolder(root='test', transform=transform_test)
+    testset = torchvision.datasets.ImageFolder(root=folder_location+'test', transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=num_workers)
 
-    classes = open("names.txt").read().strip().split("\n")
+    classes = open(folder_location+"names.txt").read().strip().split("\n")
 
     # Backward mapping to original class ids (from folder names) and species name (from names.txt)
     class_to_idx = trainset.class_to_idx
@@ -104,31 +111,6 @@ def predict(net, dataloader, ofname):
     out.close()
 
 
-def get_arguments():
-    parser = argparse.ArgumentParser(description='cnn_finetune cifar 10 example')
-    parser.add_argument('--batch-size', type=int, default=32, metavar='N',
-                        help='input batch size for training (default: 32)')
-    parser.add_argument('--test-batch-size', type=int, default=64, metavar='N',
-                        help='input batch size for testing (default: 64)')
-    parser.add_argument('--epochs', type=int, default=100, metavar='N',
-                        help='number of epochs to train (default: 100)')
-    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
-                        help='learning rate (default: 0.01)')
-    parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
-                        help='SGD momentum (default: 0.9)')
-    # parser.add_argument('--no-cuda', action='store_true', default=False,
-    #                     help='disables CUDA training')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
-    parser.add_argument('--log-interval', type=int, default=100, metavar='N',
-                        help='how many batches to wait before logging training status')
-    parser.add_argument('--model-name', type=str, default='inception_v4', metavar='M',
-                        help='model name (default: resnet50)')
-    parser.add_argument('--dropout-p', type=float, default=0.2, metavar='D',
-                        help='Dropout probability (default: 0.2)')
-    return parser.parse_args()
-
-
 def accuracy(y_pred, y):
     return np.sum(y_pred == y).item()/y.shape[0]
 
@@ -164,13 +146,11 @@ def cross_valid(model, dataset, k_fold, optimizer, scheduler, times):
 
 
 if __name__ == '__main__':
-    args = get_arguments()
-    model_name = args.model_name
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device", device)
     print("The total effective training epochs are", run_k_fold_times * k_fold_number)
     model, data = get_bird_data()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
     for idx in range(run_k_fold_times):
         cross_valid(model, data['dataset'], k_fold_number, optimizer, scheduler, idx)
