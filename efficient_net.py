@@ -12,13 +12,9 @@ from efficientnet_pytorch import EfficientNet
 # drive.mount('/content/gdrive')
 # !pip install efficientnet_pytorch
 
-# Then run
-# import os
-# os.chdir('/content/gdrive/MyDrive/kaggle/')
-
 image_dimension = 512
 batch_size = 8
-num_workers = 2
+num_workers = 4
 num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 4
