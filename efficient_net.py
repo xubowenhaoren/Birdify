@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 from efficientnet_pytorch import EfficientNet
+import os
 
 # If in google colab, first run
 # from google.colab import drive
@@ -17,7 +18,7 @@ batch_size = 8
 num_workers = 4
 num_classes = 555
 k_fold_number = 10
-run_k_fold_times = 4
+run_k_fold_times = 1
 folder_location = "/content/gdrive/MyDrive/kaggle/"
 model_type = "efficient_net"
 
@@ -108,8 +109,17 @@ def cross_valid(model, dataset, k_fold, times):
     total_size = len(dataset)
     fraction = 1 / k_fold
     seg = int(total_size * fraction)
+    checkpoint_path = folder_location + model_type + '.pth'
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
+    if os.path.exists(checkpoint_path):
+        print("found checkpoint, recovering")
+        checkpoint = torch.load(checkpoint_path)
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        scheduler = checkpoint['scheduler']
+        model.load_state_dict(checkpoint['model'])
+    else:
+        print("no checkpoint, using new optimizer and scheduler")
     for i in range(k_fold):
         trll = 0
         trlr = i * seg
@@ -138,7 +148,7 @@ def cross_valid(model, dataset, k_fold, times):
             'optimizer': optimizer.state_dict(),
             'scheduler': scheduler
         }
-        torch.save(checkpoint, folder_location + model_type + '.pth')
+        torch.save(checkpoint, checkpoint_path)
 
 
 if __name__ == '__main__':
@@ -149,8 +159,9 @@ if __name__ == '__main__':
 
     for idx in range(run_k_fold_times):
         cross_valid(model, data['dataset'], k_fold_number, idx)
-    predict(model, data['test'], folder_location + model_type + ".csv")
-    file = open(folder_location + model_type + '.csv', 'r')
+    predict_file_path = folder_location + model_type + ".csv"
+    predict(model, data['test'], predict_file_path)
+    file = open(predict_file_path, 'r')
     lines = file.readlines()
     for row in lines:
         print(row.strip())
