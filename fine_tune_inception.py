@@ -10,7 +10,7 @@ from cnn_finetune import make_model
 
 image_dimension = 440
 batch_size = 16
-num_workers = 4
+num_workers = 2
 num_classes = 555
 
 
@@ -56,15 +56,14 @@ def get_bird_data(augmentation=0):
     return model, {'dataset': trainset, 'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
 
 
-def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay=0.0005):
+def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx):
     net.to(device)
     net.train()
     losses = []
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
+
     acc = 0.0
-    for epoch in range(start_epoch, epochs):
+    for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
         for i, batch in progress_bar:
             inputs, labels = batch[0].to(device), batch[1].to(device)
@@ -78,13 +77,14 @@ def train(net, dataloader, epochs=1, start_epoch=0, lr=0.01, momentum=0.9, decay
             optimizer.step()  # takes a step in gradient direction
 
             losses.append(loss.item())
-            if i % 100 == 0:
+            get_acc_limit = 100
+            if i % get_acc_limit == get_acc_limit - 1:
                 # see predicted result
                 softmax = torch.exp(outputs).cpu()
                 prob = list(softmax.detach().numpy())
                 predictions = np.argmax(prob, axis=1)
                 acc = accuracy(predictions, batch[1].numpy())
-            progress_bar.set_description(str(("epoch", epoch, "i", i, "acc", acc, "loss", loss.item())))
+            progress_bar.set_description(str(("k_fold", k_fold_idx, "epoch", epoch, "i", i, "acc", acc, "loss", loss.item())))
 
         scheduler.step()
     return losses
@@ -135,12 +135,12 @@ def accuracy(y_pred, y):
 
 
 # define a cross validation function
-def crossvalid(model, dataset, lr, k_fold):
+def crossvalid(model, dataset, lr, k_fold, momentum=0.9, decay=0.0005):
     total_size = len(dataset)
     fraction = 1 / k_fold
     seg = int(total_size * fraction)
-    train_loss = 0
-    val_loss = 0
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
     for i in range(k_fold):
         trll = 0
         trlr = i * seg
@@ -158,17 +158,12 @@ def crossvalid(model, dataset, lr, k_fold):
         train_set = torch.utils.data.dataset.Subset(dataset, train_indices)
         val_set = torch.utils.data.dataset.Subset(dataset, val_indices)
 
-
         train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size,
                                                    shuffle=True, num_workers=num_workers)
         val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size,
                                                  shuffle=True, num_workers=num_workers)
-        train_loss += train(model, train_loader, epochs=7, lr=lr)
-        val_loss += train(model, val_loader, epochs=1, lr=lr)
-
-    train_loss /= k_fold
-    val_loss /= k_fold
-    return train_loss, val_loss
+        train(model, train_loader, 1, optimizer, scheduler, i)
+        train(model, val_loader, 1, optimizer, scheduler, i)
 
 
 if __name__ == '__main__':
@@ -178,5 +173,5 @@ if __name__ == '__main__':
     print("using device", device)
     model, data = get_bird_data()
 
-    train_loss, val_loss = crossvalid(model, data['dataset'], args.lr, 5)
+    crossvalid(model, data['dataset'], args.lr, 5)
     predict(model, data['test'], "preds.csv")
