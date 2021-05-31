@@ -16,9 +16,9 @@ from efficientnet_pytorch import EfficientNet
 # import os
 # os.chdir('/content/gdrive/MyDrive/kaggle/')
 
-image_dimension = 440
-batch_size = 12
-num_workers = 4
+image_dimension = 512
+batch_size = 8
+num_workers = 2
 num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 4
@@ -26,7 +26,7 @@ folder_location = "/content/gdrive/MyDrive/kaggle/"
 
 
 def get_bird_data(augmentation=0):
-    model = EfficientNet.from_pretrained('efficientnet-b3', num_classes=num_classes)
+    model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
     model.fc = nn.Linear(512, num_classes)
     model = model.to(device)
     transform_train = transforms.Compose([
