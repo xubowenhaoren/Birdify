@@ -12,6 +12,8 @@ image_dimension = 440
 batch_size = 16
 num_workers = 2
 num_classes = 555
+k_fold_number = 5
+train_epochs = 7
 
 
 def get_bird_data(augmentation=0):
@@ -162,7 +164,7 @@ def crossvalid(model, dataset, lr, k_fold, momentum=0.9, decay=0.0005):
                                                    shuffle=True, num_workers=num_workers)
         val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size,
                                                  shuffle=True, num_workers=num_workers)
-        train(model, train_loader, 1, optimizer, scheduler, i)
+        train(model, train_loader, train_epochs, optimizer, scheduler, i)
         train(model, val_loader, 1, optimizer, scheduler, i)
 
 
@@ -173,5 +175,5 @@ if __name__ == '__main__':
     print("using device", device)
     model, data = get_bird_data()
 
-    crossvalid(model, data['dataset'], args.lr, 5)
+    crossvalid(model, data['dataset'], args.lr, k_fold_number)
     predict(model, data['test'], "preds.csv")
