@@ -63,7 +63,7 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
     net.train()
     losses = []
     criterion = nn.CrossEntropyLoss()
-    effective_epoch = (k_fold_idx + 1) * (run_idx + 1)
+    effective_epoch = (run_idx * k_fold_number) + k_fold_idx
     acc = 0.0
     for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
