@@ -12,8 +12,8 @@ image_dimension = 440
 batch_size = 16
 num_workers = 2
 num_classes = 555
-k_fold_number = 5
-train_epochs = 7
+k_fold_number = 10
+run_k_fold_times = 4
 
 
 def get_bird_data(augmentation=0):
@@ -58,12 +58,12 @@ def get_bird_data(augmentation=0):
     return model, {'dataset': trainset, 'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
 
 
-def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx):
+def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
     net.to(device)
     net.train()
     losses = []
     criterion = nn.CrossEntropyLoss()
-
+    effective_epoch = (k_fold_idx + 1) * (run_idx + 1)
     acc = 0.0
     for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
@@ -86,7 +86,7 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx):
                 prob = list(softmax.detach().numpy())
                 predictions = np.argmax(prob, axis=1)
                 acc = accuracy(predictions, batch[1].numpy())
-            progress_bar.set_description(str(("k_fold", k_fold_idx, "epoch", epoch, "i", i, "acc", acc, "loss", loss.item())))
+            progress_bar.set_description(str(("epoch", effective_epoch, "i", i, "acc", acc, "loss", loss.item())))
 
         scheduler.step()
     return losses
@@ -137,12 +137,10 @@ def accuracy(y_pred, y):
 
 
 # define a cross validation function
-def crossvalid(model, dataset, lr, k_fold, momentum=0.9, decay=0.0005):
+def cross_valid(model, dataset, k_fold, optimizer, scheduler, times):
     total_size = len(dataset)
     fraction = 1 / k_fold
     seg = int(total_size * fraction)
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
     for i in range(k_fold):
         trll = 0
         trlr = i * seg
@@ -164,8 +162,8 @@ def crossvalid(model, dataset, lr, k_fold, momentum=0.9, decay=0.0005):
                                                    shuffle=True, num_workers=num_workers)
         val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size,
                                                  shuffle=True, num_workers=num_workers)
-        train(model, train_loader, train_epochs, optimizer, scheduler, i)
-        train(model, val_loader, 1, optimizer, scheduler, i)
+        train(model, train_loader, 1, optimizer, scheduler, i, times)
+        train(model, val_loader, 1, optimizer, scheduler, i, times)
 
 
 if __name__ == '__main__':
@@ -173,7 +171,10 @@ if __name__ == '__main__':
     model_name = args.model_name
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device", device)
+    print("The total effective training epochs are", run_k_fold_times * k_fold_number)
     model, data = get_bird_data()
-
-    crossvalid(model, data['dataset'], args.lr, k_fold_number)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
+    for idx in range(run_k_fold_times):
+        cross_valid(model, data['dataset'], k_fold_number, optimizer, scheduler, idx)
     predict(model, data['test'], "preds.csv")
