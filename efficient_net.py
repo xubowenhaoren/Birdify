@@ -5,9 +5,9 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
-import efficient_net_v2
+from efficientnet_pytorch import EfficientNet
 
-image_dimension = 480
+image_dimension = 440
 batch_size = 8
 
 
@@ -103,9 +103,8 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device", device)
     data = get_bird_data()
-    # model = torch.hub.load('pytorch/vision:v0.6.0', 'resnet18', pretrained=True)
     num_classes = 555
-    model = efficient_net_v2.effnetv2_s(num_classes=num_classes)
+    model = EfficientNet.from_pretrained('efficientnet-b3', num_classes=num_classes)
     model.fc = nn.Linear(512, num_classes)
 
     losses = train(model, data['train'], epochs=35, lr=.01)
