@@ -56,7 +56,7 @@ def get_bird_data(augmentation=0):
 
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     testset = torchvision.datasets.ImageFolder(root=folder_location+'test', transform=transform_test)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=num_workers)
 
     classes = open(folder_location+"names.txt").read().strip().split("\n")
 
