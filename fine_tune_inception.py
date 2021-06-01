@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 from cnn_finetune import make_model
-import csv
+import os
 
 # from google.colab import drive
 # drive.mount('/content/gdrive')
@@ -22,6 +22,7 @@ num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 4
 folder_location = "/content/gdrive/MyDrive/kaggle/"
+model_type = "inception"
 
 
 def get_bird_data(augmentation=0):
@@ -117,10 +118,21 @@ def accuracy(y_pred, y):
 
 
 # define a cross validation function
-def cross_valid(model, dataset, k_fold, optimizer, scheduler, times):
+def cross_valid(model, dataset, k_fold, times):
     total_size = len(dataset)
     fraction = 1 / k_fold
     seg = int(total_size * fraction)
+    checkpoint_path = folder_location + model_type + '.pth'
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
+    if os.path.exists(checkpoint_path):
+        print("found checkpoint, recovering")
+        checkpoint = torch.load(checkpoint_path)
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        scheduler = checkpoint['scheduler']
+        model.load_state_dict(checkpoint['model'])
+    else:
+        print("no checkpoint, using new optimizer and scheduler")
     for i in range(k_fold):
         trll = 0
         trlr = i * seg
@@ -144,6 +156,12 @@ def cross_valid(model, dataset, k_fold, optimizer, scheduler, times):
                                                  shuffle=True, num_workers=num_workers)
         train(model, train_loader, 1, optimizer, scheduler, i, times)
         train(model, val_loader, 1, optimizer, scheduler, i, times)
+        checkpoint = {
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler
+        }
+        torch.save(checkpoint, checkpoint_path)
 
 
 if __name__ == '__main__':
@@ -151,12 +169,12 @@ if __name__ == '__main__':
     print("using device", device)
     print("The total effective training epochs are", run_k_fold_times * k_fold_number)
     model, data = get_bird_data()
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
+
     for idx in range(run_k_fold_times):
-        cross_valid(model, data['dataset'], k_fold_number, optimizer, scheduler, idx)
-    predict(model, data['test'], "preds.csv")
-    file = open('preds.csv', 'r')
+        cross_valid(model, data['dataset'], k_fold_number, idx)
+    predict_file_path = folder_location + model_type + ".csv"
+    predict(model, data['test'], predict_file_path)
+    file = open(predict_file_path, 'r')
     lines = file.readlines()
     for row in lines:
         print(row.strip())
