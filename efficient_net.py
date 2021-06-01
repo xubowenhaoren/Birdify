@@ -59,6 +59,10 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
     net.train()
     criterion = nn.CrossEntropyLoss()
     effective_epoch = (run_idx * k_fold_number) + k_fold_idx
+    schedule = {0: 0.09, 5: 0.01, 15: 0.001, 20: 0.0001, 30: 0.00001}
+    if effective_epoch in schedule:
+        for g in optimizer.param_groups:
+            g['lr'] = schedule[effective_epoch]
     acc = 0.0
     for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
@@ -80,7 +84,7 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
                 prob = list(softmax.detach().numpy())
                 predictions = np.argmax(prob, axis=1)
                 acc = accuracy(predictions, batch[1].numpy())
-            progress_bar.set_description(str(("epoch", effective_epoch, "i", i, "acc", acc, "loss", loss.item())))
+            progress_bar.set_description(str(("epoch", effective_epoch, "lr", scheduler.get_lr(), "acc", acc, "loss", loss.item())))
 
         scheduler.step()
 
