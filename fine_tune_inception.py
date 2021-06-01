@@ -74,6 +74,7 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
     effective_epoch = (run_idx * k_fold_number) + k_fold_idx
     schedule = {0: 0.09, 5: 0.01, 15: 0.001, 20: 0.0001, 30: 0.00001}
     if effective_epoch in schedule:
+        print("about to use learning rate", schedule[effective_epoch])
         for g in optimizer.param_groups:
             g['lr'] = schedule[effective_epoch]
     acc = 0.0
