@@ -77,4 +77,4 @@ if __name__ == '__main__':
         print("found checkpoint, recovering")
         checkpoint = torch.load(checkpoint_path)
         model.load_state_dict(checkpoint['model'])
-    predict(model, data['test'], "preds.csv")
+    predict(model, data['test'], checkpoint_path)

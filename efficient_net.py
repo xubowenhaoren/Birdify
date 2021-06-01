@@ -161,7 +161,3 @@ if __name__ == '__main__':
         cross_valid(model, data['dataset'], k_fold_number, idx)
     predict_file_path = folder_location + model_type + ".csv"
     predict(model, data['test'], predict_file_path)
-    file = open(predict_file_path, 'r')
-    lines = file.readlines()
-    for row in lines:
-        print(row.strip())
