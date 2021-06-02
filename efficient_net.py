@@ -82,8 +82,6 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
                 acc = accuracy(predictions, batch[1].numpy())
             progress_bar.set_description(str(("epoch", effective_epoch, "lr", scheduler.get_lr(), "acc", acc, "loss", loss.item())))
 
-        scheduler.step()
-
 
 def predict(net, dataloader, ofname):
     out = open(ofname, 'w')
@@ -143,6 +141,7 @@ def cross_valid(model, dataset, k_fold, times):
                                                  shuffle=True, num_workers=num_workers)
         train(model, train_loader, 1, optimizer, scheduler, i, times)
         train(model, val_loader, 1, optimizer, scheduler, i, times)
+        scheduler.step()
         checkpoint = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
