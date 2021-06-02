@@ -22,6 +22,7 @@ run_k_fold_times = 1
 folder_location = "/content/gdrive/MyDrive/kaggle/"
 model_type = "efficient_net"
 per_epoch_lr_decay = 0.9
+recovered = False
 
 
 def get_bird_data(augmentation=0):
@@ -108,18 +109,13 @@ def cross_valid(model, dataset, k_fold, times):
     total_size = len(dataset)
     fraction = 1 / k_fold
     seg = int(total_size * fraction)
-    checkpoint_path = folder_location + model_type + '.pth'
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.9)
-    if os.path.exists(checkpoint_path):
-        print("found checkpoint, recovering")
-        checkpoint = torch.load(checkpoint_path)
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        # scheduler = checkpoint['scheduler']
-        model.load_state_dict(checkpoint['model'])
-    else:
-        print("no checkpoint, using new optimizer")
-    for i in range(k_fold):
+    local_k_fold_i = 0
+    global recovered
+    if not recovered and os.path.exists(checkpoint_path):
+        recovered = True
+        local_k_fold_i = saved_k_fold_i + 1
+        print("resuming the cross-valid with local epoch as", local_k_fold_i)
+    for i in range(local_k_fold_i, k_fold):
         trll = 0
         trlr = i * seg
         vall = trlr
@@ -156,7 +152,8 @@ def cross_valid(model, dataset, k_fold, times):
         checkpoint = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-            # 'scheduler': scheduler
+            'k_fold_run': times,
+            'k_fold_i': i
         }
         torch.save(checkpoint, checkpoint_path)
 
@@ -166,8 +163,19 @@ if __name__ == '__main__':
     print("using device", device)
     print("The total effective training epochs are", run_k_fold_times * k_fold_number)
     model, data = get_bird_data()
-
-    for idx in range(run_k_fold_times):
+    checkpoint_path = folder_location + model_type + '.pth'
+    optimizer = optim.SGD(model.parameters(), lr=0.09, momentum=0.9)
+    saved_k_fold_times, saved_k_fold_i = 0, 0
+    if os.path.exists(checkpoint_path):
+        print("found checkpoint, recovering")
+        checkpoint = torch.load(checkpoint_path)
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        model.load_state_dict(checkpoint['model'])
+        saved_k_fold_times = checkpoint['k_fold_run']
+        saved_k_fold_i = checkpoint['k_fold_i']
+    else:
+        print("no checkpoint, using new optimizer")
+    for idx in range(saved_k_fold_times, run_k_fold_times):
         cross_valid(model, data['dataset'], k_fold_number, idx)
     predict_file_path = folder_location + model_type + ".csv"
     predict(model, data['test'], predict_file_path)
