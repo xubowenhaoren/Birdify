@@ -15,8 +15,8 @@ import os
 # !pip install efficientnet_pytorch
 # !pip install cnn_finetune
 
-image_dimension = 540
-batch_size = 24
+image_dimension = 670
+batch_size = 12
 num_workers = 4
 num_classes = 555
 k_fold_number = 10
