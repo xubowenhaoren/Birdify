@@ -15,8 +15,8 @@ import os
 # !pip install efficientnet_pytorch
 # !pip install cnn_finetune
 
-image_dimension = 512
-batch_size = 16
+image_dimension = 540
+batch_size = 24
 num_workers = 4
 num_classes = 555
 k_fold_number = 10
@@ -72,11 +72,6 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
     net.train()
     criterion = nn.CrossEntropyLoss()
     effective_epoch = (run_idx * k_fold_number) + k_fold_idx
-    schedule = {0: 0.09, 5: 0.01, 15: 0.001, 20: 0.0001, 30: 0.00001}
-    if effective_epoch in schedule:
-        print("about to use learning rate", schedule[effective_epoch])
-        for g in optimizer.param_groups:
-            g['lr'] = schedule[effective_epoch]
     acc = 0.0
     for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
@@ -129,7 +124,7 @@ def cross_valid(model, dataset, k_fold, times):
     seg = int(total_size * fraction)
     checkpoint_path = folder_location + model_type + '.pth'
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.975)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)
     if os.path.exists(checkpoint_path):
         print("found checkpoint, recovering")
         checkpoint = torch.load(checkpoint_path)
