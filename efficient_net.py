@@ -21,6 +21,7 @@ k_fold_number = 10
 run_k_fold_times = 1
 folder_location = "/content/gdrive/MyDrive/kaggle/"
 model_type = "efficient_net"
+per_epoch_lr_decay = 0.9
 
 
 def get_bird_data(augmentation=0):
@@ -54,11 +55,10 @@ def get_bird_data(augmentation=0):
     return model, {'dataset': trainset, 'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
 
 
-def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
+def train(net, dataloader, epochs, optimizer, effective_epoch):
     net.to(device)
     net.train()
     criterion = nn.CrossEntropyLoss()
-    effective_epoch = (run_idx * k_fold_number) + k_fold_idx
     acc = 0.0
     for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
@@ -80,7 +80,8 @@ def train(net, dataloader, epochs, optimizer, scheduler, k_fold_idx, run_idx):
                 prob = list(softmax.detach().numpy())
                 predictions = np.argmax(prob, axis=1)
                 acc = accuracy(predictions, batch[1].numpy())
-            progress_bar.set_description(str(("epoch", effective_epoch, "lr", scheduler.get_lr(), "acc", acc, "loss", loss.item())))
+            progress_bar.set_description(
+                str(("epoch", effective_epoch, "lr", optimizer.param_groups[0]['lr'], "acc", acc, "loss", loss.item())))
 
 
 def predict(net, dataloader, ofname):
@@ -99,7 +100,7 @@ def predict(net, dataloader, ofname):
 
 
 def accuracy(y_pred, y):
-    return np.sum(y_pred == y).item()/y.shape[0]
+    return np.sum(y_pred == y).item() / y.shape[0]
 
 
 # define a cross validation function
@@ -109,15 +110,15 @@ def cross_valid(model, dataset, k_fold, times):
     seg = int(total_size * fraction)
     checkpoint_path = folder_location + model_type + '.pth'
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.9)
     if os.path.exists(checkpoint_path):
         print("found checkpoint, recovering")
         checkpoint = torch.load(checkpoint_path)
         optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler = checkpoint['scheduler']
+        # scheduler = checkpoint['scheduler']
         model.load_state_dict(checkpoint['model'])
     else:
-        print("no checkpoint, using new optimizer and scheduler")
+        print("no checkpoint, using new optimizer")
     for i in range(k_fold):
         trll = 0
         trlr = i * seg
@@ -139,13 +140,23 @@ def cross_valid(model, dataset, k_fold, times):
                                                    shuffle=True, num_workers=num_workers)
         val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size,
                                                  shuffle=True, num_workers=num_workers)
-        train(model, train_loader, 1, optimizer, scheduler, i, times)
-        train(model, val_loader, 1, optimizer, scheduler, i, times)
-        scheduler.step()
+        # calculate the learning rate
+        effective_epoch = (times * k_fold_number) + i
+        schedule = {0: 0.09, 5: 0.01, 15: 0.001, 20: 0.0001, 30: 0.00001}
+        if effective_epoch in schedule:
+            print("found new schedule, overriding optimizer learning rate")
+            new_lr = schedule[effective_epoch]
+        else:
+            new_lr = optimizer.param_groups[0]['lr'] * per_epoch_lr_decay
+        for g in optimizer.param_groups:
+            g['lr'] = new_lr
+
+        train(model, train_loader, 1, optimizer, i)
+        train(model, val_loader, 1, optimizer, i)
         checkpoint = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-            'scheduler': scheduler
+            # 'scheduler': scheduler
         }
         torch.save(checkpoint, checkpoint_path)
 
