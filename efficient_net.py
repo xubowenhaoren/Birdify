@@ -61,6 +61,8 @@ def train(net, dataloader, epochs, optimizer, effective_epoch):
     net.train()
     criterion = nn.CrossEntropyLoss()
     acc = 0.0
+    loss_sum = 0.0
+    total_itr = 0
     for epoch in range(epochs):
         progress_bar = tqdm(enumerate(dataloader))
         for i, batch in progress_bar:
@@ -72,6 +74,9 @@ def train(net, dataloader, epochs, optimizer, effective_epoch):
 
             loss = criterion(outputs, labels)
             loss.backward()  # autograd magic, computes all the partial derivatives
+            curr_loss = loss.item()
+            loss_sum += curr_loss
+            total_itr += 1
             optimizer.step()  # takes a step in gradient direction
 
             get_acc_limit = 100
@@ -81,8 +86,8 @@ def train(net, dataloader, epochs, optimizer, effective_epoch):
                 prob = list(softmax.detach().numpy())
                 predictions = np.argmax(prob, axis=1)
                 acc = accuracy(predictions, batch[1].numpy())
-            progress_bar.set_description(
-                str(("epoch", effective_epoch, "lr", optimizer.param_groups[0]['lr'], "acc", acc, "loss", loss.item())))
+            progress_bar.set_description(str(("epoch", effective_epoch, "lr", optimizer.param_groups[0]['lr'], "acc", acc, "loss", curr_loss)))
+    return str(acc), str(loss_sum / total_itr)
 
 
 def predict(net, dataloader, ofname):
@@ -147,14 +152,18 @@ def cross_valid(model, dataset, k_fold, times):
         for g in optimizer.param_groups:
             g['lr'] = new_lr
 
-        train(model, train_loader, 1, optimizer, i)
-        train(model, val_loader, 1, optimizer, i)
+        train_acc, train_loss = train(model, train_loader, 1, optimizer, i)
+        val_acc, val_loss = train(model, val_loader, 1, optimizer, i)
         checkpoint = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
             'k_fold_run': times,
             'k_fold_i': i
         }
+        # So we write the log before the checkpoint. If we get duplicate epochs, use the last line.
+        with open(folder_location + model_type + "_log.txt", "a+") as log_file:
+            log_file.write("epoch " + str(effective_epoch) + " train acc " + train_acc + " loss " + train_loss + "\n")
+            log_file.write("epoch " + str(effective_epoch) + " val acc " + val_acc + " loss " + val_loss + "\n")
         torch.save(checkpoint, checkpoint_path)
 
 
