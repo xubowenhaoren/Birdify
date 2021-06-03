@@ -5,54 +5,41 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
-from cnn_finetune import make_model
+from efficientnet_pytorch import EfficientNet
 import os
 
+# If in google colab, first run
 # from google.colab import drive
 # drive.mount('/content/gdrive')
-
-# import os
 # !pip install efficientnet_pytorch
-# !pip install cnn_finetune
 
 image_dimension = 512
-batch_size = 16
+batch_size = 8
 num_workers = 4
 num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 2
 folder_location = "/content/gdrive/MyDrive/kaggle/"
-model_type = "inception_cv"
+model_type = "efficient_net_no_cv"
 per_epoch_lr_decay = 0.9
 recovered = False
 
 
 def get_bird_data(augmentation=0):
-    model = make_model(
-        "inception_v4",
-        pretrained=True,
-        num_classes=num_classes,
-        dropout_p=0.2,
-        input_size=(image_dimension, image_dimension)
-    )
+    model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
+    model.fc = nn.Linear(512, num_classes)
     model = model.to(device)
     transform_train = transforms.Compose([
         transforms.Resize(image_dimension),
         transforms.RandomCrop(image_dimension, padding=8, padding_mode='edge'),  # Take 128x128 crops from padded images
         transforms.RandomHorizontalFlip(),  # 50% of time flip image along y-axis
         transforms.ToTensor(),
-        transforms.Normalize(
-            mean=model.original_model_info.mean,
-            std=model.original_model_info.std)
     ])
 
     transform_test = transforms.Compose([
         transforms.Resize(image_dimension),
         transforms.CenterCrop(image_dimension),
         transforms.ToTensor(),
-        transforms.Normalize(
-            mean=model.original_model_info.mean,
-            std=model.original_model_info.std)
     ])
     trainset = torchvision.datasets.ImageFolder(root=folder_location+'train', transform=transform_train)
 
@@ -119,7 +106,7 @@ def predict(net, dataloader, ofname):
 
 
 def accuracy(y_pred, y):
-    return np.sum(y_pred == y).item()/y.shape[0]
+    return np.sum(y_pred == y).item() / y.shape[0]
 
 
 # define a cross validation function

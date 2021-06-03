@@ -19,10 +19,9 @@ image_dimension = 512
 batch_size = 16
 num_workers = 4
 num_classes = 555
-k_fold_number = 10
-run_k_fold_times = 2
+num_epochs = 20
 folder_location = "/content/gdrive/MyDrive/kaggle/"
-model_type = "inception_cv"
+model_type = "inception_no_cv"
 per_epoch_lr_decay = 0.9
 recovered = False
 
@@ -69,14 +68,23 @@ def get_bird_data(augmentation=0):
     return model, {'dataset': trainset, 'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
 
 
-def train(net, dataloader, epochs, optimizer, effective_epoch):
+def train(net, dataloader, epochs, optimizer):
     net.to(device)
     net.train()
     criterion = nn.CrossEntropyLoss()
     acc = 0.0
     loss_sum = 0.0
     total_itr = 0
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
+        schedule = {0: 0.09, 5: 0.01, 15: 0.001, 20: 0.0001, 30: 0.00001}
+        if epoch in schedule:
+            print("found new schedule, overriding optimizer learning rate")
+            new_lr = schedule[epoch]
+        else:
+            new_lr = optimizer.param_groups[0]['lr'] * per_epoch_lr_decay
+        for g in optimizer.param_groups:
+            g['lr'] = new_lr
+
         progress_bar = tqdm(enumerate(dataloader))
         for i, batch in progress_bar:
             inputs, labels = batch[0].to(device), batch[1].to(device)
@@ -99,8 +107,17 @@ def train(net, dataloader, epochs, optimizer, effective_epoch):
                 prob = list(softmax.detach().numpy())
                 predictions = np.argmax(prob, axis=1)
                 acc = accuracy(predictions, batch[1].numpy())
-            progress_bar.set_description(str(("epoch", effective_epoch, "lr", optimizer.param_groups[0]['lr'], "acc", acc, "loss", curr_loss)))
-    return str(acc), str(loss_sum / total_itr)
+            progress_bar.set_description(str(("epoch", epoch, "lr", optimizer.param_groups[0]['lr'], "acc", acc, "loss", curr_loss)))
+        train_acc, train_loss = str(acc), str(loss_sum / total_itr)
+        checkpoint = {
+                    'model': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'epoch': epoch
+                    }
+        # So we write the log before the checkpoint. If we get duplicate epochs, use the last line.
+        with open(folder_location + model_type + "_log.txt", "a+") as log_file:
+            log_file.write("epoch " + str(epoch) + " train acc " + train_acc + " loss " + train_loss + "\n")
+        torch.save(checkpoint, checkpoint_path)
 
 
 def predict(net, dataloader, ofname):
@@ -122,82 +139,22 @@ def accuracy(y_pred, y):
     return np.sum(y_pred == y).item()/y.shape[0]
 
 
-# define a cross validation function
-def cross_valid(model, dataset, k_fold, times):
-    total_size = len(dataset)
-    fraction = 1 / k_fold
-    seg = int(total_size * fraction)
-    local_k_fold_i = 0
-    global recovered
-    if not recovered and os.path.exists(checkpoint_path):
-        recovered = True
-        local_k_fold_i = saved_k_fold_i + 1
-        print("resuming the cross-valid with local epoch as", local_k_fold_i)
-    for i in range(local_k_fold_i, k_fold):
-        trll = 0
-        trlr = i * seg
-        vall = trlr
-        valr = i * seg + seg
-        trrl = valr
-        trrr = total_size
-
-        train_left_indices = list(range(trll, trlr))
-        train_right_indices = list(range(trrl, trrr))
-
-        train_indices = train_left_indices + train_right_indices
-        val_indices = list(range(vall, valr))
-
-        train_set = torch.utils.data.dataset.Subset(dataset, train_indices)
-        val_set = torch.utils.data.dataset.Subset(dataset, val_indices)
-
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size,
-                                                   shuffle=True, num_workers=num_workers)
-        val_loader = torch.utils.data.DataLoader(val_set, batch_size=batch_size,
-                                                 shuffle=True, num_workers=num_workers)
-        # calculate the learning rate
-        effective_epoch = (times * k_fold_number) + i
-        schedule = {0: 0.09, 5: 0.01, 15: 0.001, 20: 0.0001, 30: 0.00001}
-        if effective_epoch in schedule:
-            print("found new schedule, overriding optimizer learning rate")
-            new_lr = schedule[effective_epoch]
-        else:
-            new_lr = optimizer.param_groups[0]['lr'] * per_epoch_lr_decay
-        for g in optimizer.param_groups:
-            g['lr'] = new_lr
-
-        train_acc, train_loss = train(model, train_loader, 1, optimizer, effective_epoch)
-        val_acc, val_loss = train(model, val_loader, 1, optimizer, effective_epoch)
-        checkpoint = {
-            'model': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'k_fold_run': times,
-            'k_fold_i': i
-        }
-        # So we write the log before the checkpoint. If we get duplicate epochs, use the last line.
-        with open(folder_location + model_type + "_log.txt", "a+") as log_file:
-            log_file.write("epoch " + str(effective_epoch) + " train acc " + train_acc + " loss " + train_loss + "\n")
-            log_file.write("epoch " + str(effective_epoch) + " val acc " + val_acc + " loss " + val_loss + "\n")
-        torch.save(checkpoint, checkpoint_path)
-
-
 if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using device", device)
-    print("The total effective training epochs are", run_k_fold_times * k_fold_number)
+    print("The total training epochs are", num_epochs)
     model, data = get_bird_data()
     checkpoint_path = folder_location + model_type + '.pth'
     optimizer = optim.SGD(model.parameters(), lr=0.09, momentum=0.9)
-    saved_k_fold_times, saved_k_fold_i = 0, 0
+    start_epoch = 0
     if os.path.exists(checkpoint_path):
         print("found checkpoint, recovering")
         checkpoint = torch.load(checkpoint_path)
         optimizer.load_state_dict(checkpoint['optimizer'])
         model.load_state_dict(checkpoint['model'])
-        saved_k_fold_times = checkpoint['k_fold_run']
-        saved_k_fold_i = checkpoint['k_fold_i']
+        start_epoch = checkpoint['epoch'] + 1
     else:
         print("no checkpoint, using new optimizer")
-    for idx in range(saved_k_fold_times, run_k_fold_times):
-        cross_valid(model, data['dataset'], k_fold_number, idx)
+    train(model, data["train"], num_epochs, optimizer)
     predict_file_path = folder_location + model_type + ".csv"
     predict(model, data['test'], predict_file_path)
