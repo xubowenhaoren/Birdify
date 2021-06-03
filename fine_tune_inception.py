@@ -165,8 +165,8 @@ def cross_valid(model, dataset, k_fold, times):
         for g in optimizer.param_groups:
             g['lr'] = new_lr
 
-        train_acc, train_loss = train(model, train_loader, 1, optimizer, i)
-        val_acc, val_loss = train(model, val_loader, 1, optimizer, i)
+        train_acc, train_loss = train(model, train_loader, 1, optimizer, effective_epoch)
+        val_acc, val_loss = train(model, val_loader, 1, optimizer, effective_epoch)
         checkpoint = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),

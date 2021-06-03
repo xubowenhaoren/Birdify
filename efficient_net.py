@@ -13,14 +13,14 @@ import os
 # drive.mount('/content/gdrive')
 # !pip install efficientnet_pytorch
 
-image_dimension = 600
-batch_size = 6
+image_dimension = 512
+batch_size = 8
 num_workers = 4
 num_classes = 555
 k_fold_number = 10
-run_k_fold_times = 1
+run_k_fold_times = 2
 folder_location = "/content/gdrive/MyDrive/kaggle/"
-model_type = "efficient_net"
+model_type = "efficient_net_cv"
 per_epoch_lr_decay = 0.9
 recovered = False
 
@@ -152,8 +152,8 @@ def cross_valid(model, dataset, k_fold, times):
         for g in optimizer.param_groups:
             g['lr'] = new_lr
 
-        train_acc, train_loss = train(model, train_loader, 1, optimizer, i)
-        val_acc, val_loss = train(model, val_loader, 1, optimizer, i)
+        train_acc, train_loss = train(model, train_loader, 1, optimizer, effective_epoch)
+        val_acc, val_loss = train(model, val_loader, 1, optimizer, effective_epoch)
         checkpoint = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
