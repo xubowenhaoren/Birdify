@@ -30,9 +30,13 @@ In the end, we added cross validation to see how it affects the performance of t
 
 - Hard-ware limit / Training time limit
 
-  Number of epochs: 35
+  Number of epochs:
 
-  Resolution of input image:
+  5 -> 35: Loss of Inception V4 decrease to as low as 0.02. 30 mins per epoch.
+
+  -> 20: Loss of Efficient Net decrease to as low as 0.006. 60 mins per epoch.
+
+  Resolution of input image: 128 -> 214 -> 300 -> 512 -> 600
 
 - Overfitting
 
@@ -40,21 +44,27 @@ In the end, we added cross validation to see how it affects the performance of t
 
   Using different learning rate during different epochs.
 
--
+- Pre-trained or Not
+
+- Hard to tell if it overfits from the accuracy
 
 ### - Why did you think this approach was better than other options?
 
-- Using 5-fold cross validation, the training accuracy doesn't increase to 100% that fast. Even if it's high during training, it falls back during validation.
+- Using 10-fold cross validation, elaborate loss, accuracy, test accuracy difference
 
 ## Experiments
 
 ### - Try multiple things to see what works better
 
-Diagrams
+- Different models on the same basic hyper-parameter setting: ResNet18, ResNet50, ResNet101, Inception V3, Inception V4, Efficient Net V1-B5.
+
+- Diagrams
 
 ## Results
 
-### - Or maybe here is where you talk about what worked better idk
+### - what worked better
+
+Cross Validation reduced loss.
 
 ### - Maybe have some nice charts and graphs here
 
