@@ -23,10 +23,15 @@ folder_location = "/content/gdrive/MyDrive/kaggle/"
 model_type = "efficient_net_cv"
 per_epoch_lr_decay = 0.9
 recovered = False
+use_pretrained = False
 
 
 def get_bird_data(augmentation=0):
-    model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
+    if use_pretrained:
+        model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
+    else:
+        print("using model without pretrained weights")
+        model = EfficientNet.from_name('efficientnet-b5', num_classes=num_classes)
     model.fc = nn.Linear(512, num_classes)
     model = model.to(device)
     transform_train = transforms.Compose([
