@@ -13,14 +13,14 @@ import os
 # drive.mount('/content/gdrive')
 # !pip install efficientnet_pytorch
 
-image_dimension = 700
-batch_size = 4
+image_dimension = 600
+batch_size = 6
 num_workers = 4
 num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 2
 folder_location = "/content/gdrive/MyDrive/kaggle/"
-model_type = "efficient_net_challenge2"
+model_type = "efficient_net_challenge"
 per_epoch_lr_decay = 0.975
 recovered = False
 
