@@ -22,10 +22,33 @@ folder_location = "/content/gdrive/MyDrive/kaggle/"
 model_type = "efficient_net_no_cv"
 per_epoch_lr_decay = 0.9
 recovered = False
+use_dropout = True
+
+
+class MyEfficientNet(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+        # EfficientNet
+        self.network = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
+
+        # Replace last layer
+        self.network._fc = nn.Sequential(nn.Linear(self.network._fc.in_features, 512),
+                                         nn.ReLU(),
+                                         nn.Dropout(0.50),
+                                         nn.Linear(512, num_classes))
+
+    def forward(self, x):
+        out = self.network(x)
+        return out
 
 
 def get_bird_data(augmentation=0):
-    model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
+    if use_dropout:
+        model = MyEfficientNet()
+    else:
+        model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
     model = model.to(device)
     transform_train = transforms.Compose([
         transforms.Resize(image_dimension),

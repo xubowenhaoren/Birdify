@@ -20,14 +20,36 @@ num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 2
 folder_location = "/content/gdrive/MyDrive/kaggle/"
-model_type = "efficient_net_cv"
+model_type = "efficient_net_cv_dropout"
 per_epoch_lr_decay = 0.9
 recovered = False
 use_pretrained = False
+use_dropout = True
+
+
+class MyEfficientNet(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+        # EfficientNet
+        self.network = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
+
+        # Replace last layer
+        self.network._fc = nn.Sequential(nn.Linear(self.network._fc.in_features, 512),
+                                         nn.ReLU(),
+                                         nn.Dropout(0.50),
+                                         nn.Linear(512, num_classes))
+
+    def forward(self, x):
+        out = self.network(x)
+        return out
 
 
 def get_bird_data(augmentation=0):
-    if use_pretrained:
+    if use_dropout:
+        model = MyEfficientNet()
+    elif use_pretrained:
         model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
     else:
         print("using model without pretrained weights")
