@@ -23,6 +23,7 @@ folder_location = "/content/gdrive/MyDrive/kaggle/"
 model_type = "efficient_net_challenge"
 per_epoch_lr_decay = 0.975
 recovered = False
+weight_decay = 0.0005
 
 
 def get_bird_data(augmentation=0):
@@ -144,7 +145,7 @@ def cross_valid(model, dataset, k_fold, times):
                                                  shuffle=True, num_workers=num_workers)
         # calculate the learning rate
         effective_epoch = (times * k_fold_number) + i
-        schedule = {0: 0.01, 15: 0.001, 20: 0.0001, 30: 0.00001}
+        schedule = {0: 0.09, 15: 0.001, 20: 0.0001, 30: 0.00001}
         # schedule = {}
         new_lr = optimizer.param_groups[0]['lr']
         if effective_epoch in schedule:
@@ -176,7 +177,9 @@ if __name__ == '__main__':
     print("The total effective training epochs are", run_k_fold_times * k_fold_number)
     model, data = get_bird_data()
     checkpoint_path = folder_location + model_type + '.pth'
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    if weight_decay > 0:
+        print("using weight decay", weight_decay)
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=weight_decay)
     saved_k_fold_times, saved_k_fold_i = 0, 0
     if os.path.exists(checkpoint_path):
         print("found checkpoint, recovering")

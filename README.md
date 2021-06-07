@@ -11,9 +11,10 @@ We want to classify bird species based on bird images. We tested many different 
 - Different models, such as the resnet18, resnet50, resnet101, inceptionv4, efficientNetV1
 - Hyper-parameter settings such as the learning rate and the stepwise learning rate decay
 - Using ImageNet pre-trained weights or none 
-- Image resolutions
+- Image resolutions: From 128 * 128 to 600 * 600
 - Cross validation: enabled or none
-- Dropout in the FC layer: none, or p = 0.5
+- Dropout in the FC layer: none, or p = 0.2, p=0.5
+- Weight decay: none, or 0.0005
 
 ### Dataset
 
@@ -23,17 +24,25 @@ The training set contains 555 species of birds, each with around 70 images. In t
 
 The test set contains 10000 entries. Our current test accuracy is based on 10% of it.
 
+### Team
+
+Bowen Xu
+
+Wenqing Lan
+
 ## Approach
 
 ### What techniques did you use?
 
-We first used the training method with SGD optimizer, Cross Entropy Loss, and hyper-parameters including epochs=5, learning_rate=0.01, momentum=0.9, decay=0.0005. We tried to increase the training epochs to see where the test accuracy stops to increase. After we choose a reasonable number of epoch, we increased the resolution of input images.
+We first started the training with the pretrained `resnet18` model. We also used the SGD optimizer, Cross Entropy Loss. and hyper-parameters including epochs=5, learning_rate=0.01, momentum=0.9. We quickly realized that We tried to increase the training epochs to see where the test accuracy stops to increase. After we choose a reasonable number of epoch, we increased the resolution of input images.
+
+- Choice of the optimizer. We compared the popular optimizers such as Adam, AdamW, and SGD. [This article](https://towardsdatascience.com/why-adamw-matters-736223f31b5d) shows that the SGD is still the optimizer that produces more generalizable models. Therefore we choose to use the SGD optimizer throughout the project. 
 
 Next, we tried different models using the same hyperparameter setting to see which ones outstand. We picked Inception V4 and Efficient Net.
 
 In the end, we added cross validation to see how it affects the performance of these two model we picked.
 
-### - What problems did you run into?
+### What problems did you run into?
 
 - Hard-ware limit / Training time limit
 
@@ -55,13 +64,13 @@ In the end, we added cross validation to see how it affects the performance of t
 
 - Hard to tell if it overfits from the accuracy
 
-### - Why did you think this approach was better than other options?
+### Why did you think this approach was better than other options?
 
 - Using 10-fold cross validation, elaborate loss, accuracy, test accuracy difference
 
 ## Experiments
 
-### - Try multiple things to see what works better
+### Try multiple things to see what works better
 
 - Different models on the same basic hyper-parameter setting: ResNet18, ResNet50, ResNet101, Inception V3, Inception V4, Efficient Net V1-B5.
 
@@ -69,16 +78,17 @@ In the end, we added cross validation to see how it affects the performance of t
 
 ## Results
 
-### - what worked better
+### What worked better
 
 Cross Validation reduced loss.
 
-### - Maybe have some nice charts and graphs here
+### Maybe have some nice charts and graphs here
 
 ## Discussion
 
-### - What worked well and didn’t and WHY do you think that’s the case?
+### What worked well and didn’t and WHY do you think that’s the case?
 
-### - Did you learn anything?
+### Did you learn anything?
 
-### - Can anything in this project apply more broadly to other projects?
+### Can anything in this project apply more broadly to other projects?
+
