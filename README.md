@@ -6,15 +6,7 @@ Aiming to be a better bird classification tool
 
 ### What is the problem
 
-We want to classify bird species based on bird images. We tested many different configurations that can affect the test accuracy to generate better predictions. The configurations include:
-
-- Different models, such as the resnet18, resnet50, resnet101, inceptionv4, efficientNetV1
-- Hyper-parameter settings such as the learning rate and the stepwise learning rate decay
-- Using ImageNet pre-trained weights or none 
-- Image resolutions: From 128 * 128 to 600 * 600
-- Cross validation: enabled or none
-- Dropout in the FC layer: none, or p = 0.2, p=0.5
-- Weight decay: none, or 0.0005
+We want to classify bird species based on bird images. We tested many different configurations that can affect the test accuracy to generate better predictions. 
 
 ### Dataset
 
@@ -34,15 +26,29 @@ Wenqing Lan
 
 ### What techniques did you use?
 
-We first started the training with the pretrained `resnet18` model. We also used the SGD optimizer, Cross Entropy Loss. and hyper-parameters including epochs=5, learning_rate=0.01, momentum=0.9. We quickly realized that We tried to increase the training epochs to see where the test accuracy stops to increase. After we choose a reasonable number of epoch, we increased the resolution of input images.
+We first started the training with the pretrained `resnet18` model. We also used the SGD optimizer and Cross Entropy Loss. (We compared the popular optimizers such as Adam, AdamW, and SGD. [This article](https://towardsdatascience.com/why-adamw-matters-736223f31b5d) shows that the SGD is still the optimizer that produces more generalizable models. Therefore we chose to use the SGD optimizer throughout the project.) Our initial hyper-parameters included epochs = 5, learning rate = 0.01, image resolution 128*128, and momentum = 0.9. We quickly realized that the number of epochs are too limited. We tried to increase the training epochs to see where the test accuracy stops to increase and where the loss stops to decrease. After some more experiments, we've decided that epochs = 20 is a good balance between good accuracy and training time. 
 
-- Choice of the optimizer. We compared the popular optimizers such as Adam, AdamW, and SGD. [This article](https://towardsdatascience.com/why-adamw-matters-736223f31b5d) shows that the SGD is still the optimizer that produces more generalizable models. Therefore we choose to use the SGD optimizer throughout the project. 
+Later in the project, we experimented with other configurations to improve the test accuracy. The configurations include:
 
-Next, we tried different models using the same hyperparameter setting to see which ones outstand. We picked Inception V4 and Efficient Net.
-
-In the end, we added cross validation to see how it affects the performance of these two model we picked.
+- Different models, such as the ResNet18, ResNet50, ResNet101, InceptionV4, and EfficientNetV1-B5
+- Hyper-parameter settings such as the learning rate and the stepwise learning rate decay
+- Using ImageNet pre-trained weights or none 
+- Image resolutions: From 128 * 128 to 600 * 600
+- K-fold cross validation: enabled or none
+- Dropout in the FC layer: none, or p = 0.2, p=0.5
+- Weight decay: none, or 0.0005
+- Adaptive learning rate: decreasing the learning rate at scheduled epochs
+- Stepwise learning rate decrease: slightly decrease the learning rate at every epoch
 
 ### What problems did you run into?
+
+#### Bigger is better (to a limit)
+
+The `resnet18` is a fairly small network by today's standards. Our testing accuracy plateaued at around 60%. To further improve the test accuracy, we then looked for more advanced neural networks and increased the resolution of input images.
+
+We first tried bigger models in the ResNet family. We tried ResNet50 and ResNet101 at the same 128*128 resolution. The testing accuracy improved to around 70%. At this point, we couldn't specifically deduce whether the bottleneck was the small resolution or the relatively old ResNet network. Thus we ran tests with more modern networks and bigger image resolutions. 
+
+
 
 - Hard-ware limit / Training time limit
 
@@ -89,6 +95,11 @@ Cross Validation reduced loss.
 ### What worked well and didn’t and WHY do you think that’s the case?
 
 ### Did you learn anything?
+
+We found an empirical rule from the training:
+
+- Small networks (such as InceptionV4) require less time for each epoch (when using the same GPU). However, they take more epochs to reduce their loss. 
+- Bigger networks (such as EfficientNetV1-B5) require more time for each epoch. For instance, when using the same image resolution (512*512) and the maximum batch size as the Google Colab GPU permits, a typical EfficientNetV1-B5 epoch requires 60 minutes whereas an InceptionV4 epoch requires only 30 minutes. Nevertheless, Bigger networks requires less epochs to reduce the loss. 
 
 ### Can anything in this project apply more broadly to other projects?
 

@@ -23,7 +23,8 @@ model_type = "efficient_net_no_cv_dropout_0.2"
 dropout_p = 0.2
 per_epoch_lr_decay = 0.9
 recovered = False
-use_dropout = True
+use_dropout = False
+weight_decay = 0.0005
 
 
 class MyEfficientNet(nn.Module):
@@ -155,7 +156,9 @@ if __name__ == '__main__':
     print("The total training epochs are", num_epochs)
     model, data = get_bird_data()
     checkpoint_path = folder_location + model_type + '.pth'
-    optimizer = optim.SGD(model.parameters(), lr=0.09, momentum=0.9)
+    if weight_decay > 0:
+        print("using weight decay", weight_decay)
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=weight_decay)
     start_epoch = 0
     if os.path.exists(checkpoint_path):
         print("found checkpoint, recovering")
