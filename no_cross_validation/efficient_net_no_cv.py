@@ -19,7 +19,8 @@ num_workers = 4
 num_classes = 555
 num_epochs = 20
 folder_location = "/content/gdrive/MyDrive/kaggle/"
-model_type = "efficient_net_no_cv"
+model_type = "efficient_net_no_cv_dropout_0.2"
+dropout_p = 0.2
 per_epoch_lr_decay = 0.9
 recovered = False
 use_dropout = True
@@ -36,7 +37,7 @@ class MyEfficientNet(nn.Module):
         # Replace last layer
         self.network._fc = nn.Sequential(nn.Linear(self.network._fc.in_features, 512),
                                          nn.ReLU(),
-                                         nn.Dropout(0.50),
+                                         nn.Dropout(dropout_p),
                                          nn.Linear(512, num_classes))
 
     def forward(self, x):
