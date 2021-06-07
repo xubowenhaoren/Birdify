@@ -35,7 +35,7 @@ def parse_logs():
 
 
 def plot_helper(data_arr, max_epoch, title, y_label):
-    plt.figure(figsize=(16, 9))
+    plt.figure(figsize=(10, 7))
     for data in data_arr:
         log_arr, style, m_label = data
         plt.plot([log[2] for log in log_arr], style, label=m_label)

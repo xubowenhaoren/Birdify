@@ -27,7 +27,6 @@ recovered = False
 
 def get_bird_data(augmentation=0):
     model = EfficientNet.from_pretrained('efficientnet-b5', num_classes=num_classes)
-    model.fc = nn.Linear(512, num_classes)
     model = model.to(device)
     transform_train = transforms.Compose([
         transforms.Resize(image_dimension),
@@ -56,6 +55,7 @@ def get_bird_data(augmentation=0):
     return model, {'dataset': trainset, 'train': trainloader, 'test': testloader, 'to_class': idx_to_class, 'to_name': idx_to_name}
 
 
+# https://www.kaggle.com/pjreddie/transfer-learning-to-birds-with-resnet18
 def train(net, dataloader, epochs, optimizer, effective_epoch):
     net.to(device)
     net.train()
@@ -120,6 +120,7 @@ def cross_valid(model, dataset, k_fold, times):
         recovered = True
         local_k_fold_i = saved_k_fold_i + 1
         print("resuming the cross-valid with local epoch as", local_k_fold_i)
+    # https://stackoverflow.com/questions/60883696/k-fold-cross-validation-using-dataloaders-in-pytorch
     for i in range(local_k_fold_i, k_fold):
         trll = 0
         trlr = i * seg

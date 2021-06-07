@@ -32,7 +32,6 @@ def get_bird_data(augmentation=0):
     else:
         print("using model without pretrained weights")
         model = EfficientNet.from_name('efficientnet-b5', num_classes=num_classes)
-    model.fc = nn.Linear(512, num_classes)
     model = model.to(device)
     transform_train = transforms.Compose([
         transforms.Resize(image_dimension),
