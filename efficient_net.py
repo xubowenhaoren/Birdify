@@ -20,12 +20,12 @@ num_classes = 555
 k_fold_number = 10
 run_k_fold_times = 2
 folder_location = "/content/gdrive/MyDrive/kaggle/"
-model_type = "efficient_net_cv_dropout_0.2"
+model_type = "efficient_net_cv_weight_decay"
 dropout_p = 0.2
 per_epoch_lr_decay = 0.9
 recovered = False
-use_pretrained = False
-use_dropout = True
+use_pretrained = True
+use_dropout = False
 weight_decay = 0.0005
 
 
