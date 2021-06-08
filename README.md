@@ -1,6 +1,6 @@
 # Birdify
 
-Aiming to be a better bird classification tool. 
+Aiming to be a better bird classification tool.
 
 Check out our project video: https://youtu.be/jaE03PImdGM
 
@@ -108,29 +108,29 @@ We evaluated the effect of having dropout in the fully connected (FC) layer.
 | :----------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------: |
 | <img src="graphs/EfficientNet with dropout p=0.5: Accuracy.png" alt="EfficientNet with dropout p=0.5: Accuracy" style="zoom:72%;" /> | <img src="graphs/EfficientNet with dropout p=0.5: Loss.png" alt="EfficientNet with dropout p=0.5: Loss" style="zoom:72%;" /> |
 
-Although using dropout p=0.5 achieved 100% training accuracy, it had high training loss and only had 0.1% test accuracy in the end. This suggests that the dropout p=0.5 might be too high for the FC layer. 
+Although using dropout p=0.5 achieved 100% training accuracy, it had high training loss and only had 0.1% test accuracy in the end. This suggests that the dropout p=0.5 might be too high for the FC layer.
 
-|                                                                                                                                                                                |                                                                                                                                                                        |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| ![EfficientNet with cross-validation and dropout p=0.2: Accuracy](graphs/EfficientNet with cross-validation and dropout p=0.2: Accuracy.png) | ![EfficientNet with cross-validation and dropout p=0.2: Loss](graphs/EfficientNet with cross-validation and dropout p=0.2: Loss.png) |
+|                                                                                                           |                                                                                                       |
+| :-------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
+| <img src="graphs/EfficientNet with cross-validation and dropout p=0.2: Accuracy.png" style="zoom:72%;" /> | <img src="graphs/EfficientNet with cross-validation and dropout p=0.2: Loss.png" style="zoom:72%;" /> |
 
 TODO add p=0.2 no CV
 
-We see that when using dropout p=0.2, the test accuracies are much higher than those using dropout p=0.5. From the accuracy curve, we see that these configurations can indeed help prevent early overfitting. 
+We see that when using dropout p=0.2, the test accuracies are much higher than those using dropout p=0.5. From the accuracy curve, we see that these configurations can indeed help prevent early overfitting.
 
 #### Weight decay
 
 We evaluated the effect of weight decay of 0.0005.
 
-|                                                                                                                                                                                |                                                                                                                                                                        |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| ![EfficientNet with cross-validation and weight decay = 0.0005: Accuracy](graphs/EfficientNet with cross-validation and weight decay = 0.0005: Accuracy.png) | ![EfficientNet with cross-validation and weight decay = 0.0005: Loss](graphs/EfficientNet with cross-validation and weight decay = 0.0005: Loss.png) | 
+|                                                                                                                   |                                                                                                               |
+| :---------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------: |
+| <img src="graphs/EfficientNet with cross-validation and weight decay = 0.0005: Accuracy.png" style="zoom:72%;" /> | <img src="graphs/EfficientNet with cross-validation and weight decay = 0.0005: Loss.png" style="zoom:72%;" /> |
 
-|                                                                                                                                                                                |                                                                                                                                                                        |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| ![EfficientNet with weight decay = 0.0005: Accuracy](graphs/EfficientNet with weight decay = 0.0005: Accuracy.png) | ![EfficientNet with weight decay = 0.0005: Loss](graphs/EfficientNet with weight decay = 0.0005: Loss.png) |
+|                                                                                              |                                                                                          |
+| :------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------: |
+| <img src="graphs/EfficientNet with weight decay = 0.0005: Accuracy.png" style="zoom:72%;" /> | <img src="graphs/EfficientNet with weight decay = 0.0005: Loss.png" style="zoom:72%;" /> |
 
-TODO add comment for weight decay
+With weight decay, loss tends to decrease more slowly and it's hard to notice a pattern in accuracy variation. Since the loss curves still have a decreasing pattern, it's not necessarily harming the training process. If we more GPU resources, we can continue training beyond 20 epochs and verify the effectiveness of weight decay.
 
 ## Results
 
@@ -159,7 +159,7 @@ We kept these hyper-parameters constant:
 - Stepwise learning rate & exponential learning rate
   - It improved best training accuracy from 80% to 100%.
   - It improved minimum loss from 0.2 to as low as 0.0002.
-  - We think the reason is that these two techniques can "slow down" the learning process, allow the model to gradually learn and pick up more features, and prevent early overfitting. 
+  - We think the reason is that these two techniques can "slow down" the learning process, allow the model to gradually learn and pick up more features, and prevent early overfitting.
 
 **Techniques that didn't work well**
 
@@ -170,14 +170,14 @@ We kept these hyper-parameters constant:
 - Weight decay = 0.0005
   - It lead to fluctuating training accuracy.
   - Loss remains high when comparing to other configurations.
-- We think that these two techniques are not necessarily inappropriate, since the loss curves still show a decreasing pattern as the epochs increase. It just means that when the training time (in terms of epochs) is limited, these two techniques cannot efficiently help maximize the accuracy. 
+- We think that these two techniques are not necessarily inappropriate, since the loss curves still show a decreasing pattern as the epochs increase. It just means that when the training time (in terms of epochs) is limited, these two techniques cannot efficiently help maximize the accuracy.
 
 **Techniques with mixed performance**
 
 - Repeated 10-fold Cross Validation
   - As shown in the results, it improved test accuracy for InceptionV4 from 65.5% to 74.4%.
   - However, the test accuracy decreased from 89.2% to 86.9% after using repeated 10-fold Cross Validation.
-  - We think that this is a good example indicating that more appealing techniques doesn't equate better performance for every model. 
+  - We think that this is a good example indicating that more appealing techniques doesn't equate better performance for every model.
 
 ### Conclusion
 
@@ -188,9 +188,10 @@ We kept these hyper-parameters constant:
 
 ### Next steps
 
-If we have more time on this project, we would try: 
+If we have more time on this project, we would try:
 
 - Changing the momentum
+- Repeating the existing experiments with more epochs, i.e. 40 epochs.
 - Adding more controlled variables to each experiment set
 - Extracting the output layer from our trained EfficientNetV1 model and use it as input for EfficientNetV2
   - Gain accuracy improvements through state-of-the-art networks
