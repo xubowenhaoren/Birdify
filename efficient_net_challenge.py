@@ -179,7 +179,9 @@ if __name__ == '__main__':
     checkpoint_path = folder_location + model_type + '.pth'
     if weight_decay > 0:
         print("using weight decay", weight_decay)
-    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=weight_decay)
+        optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=weight_decay)
+    else:
+        optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     saved_k_fold_times, saved_k_fold_i = 0, 0
     if os.path.exists(checkpoint_path):
         print("found checkpoint, recovering")
