@@ -137,18 +137,18 @@ Here are the test accuracies of the different configurations we tested. Note tha
 
 - What worked well and didn’t and Why do you think that’s the case? Why did we think this approach was better than other options?
 
-Fixed parameters:
+We kept these hyper-parameters constant:
 
 - epoch: 20
 - momentum: 0.9
 
-Worked well:
+Techniques that worked well:
 
 - Stepwise learning rate & exponential learning rate
   - It improved best training accuracy from 80% to 100%.
   - It improved minimum loss from 0.2 to as low as 0.0002.
 
-Worked not well:
+Techniques that didn't work well:
 
 - Fully Connected Layer dropout p=0.2 and p=0.5
   - It lead to fluctuating training accuracy.
@@ -158,7 +158,7 @@ Worked not well:
   - It lead to fluctuating training accuracy.
   - Loss remains high when comparing to other configurations.
 
-Mix:
+Techniques with mixed performance:
 
 - Repeated 10-fold Cross Validation
   - As shown in the results, it improved test accuracy for InceptionV4 from 65.5% to 74.4%.
