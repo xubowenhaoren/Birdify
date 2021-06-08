@@ -171,7 +171,7 @@ Mix:
 - Having more appealing features doesn't always give you better results. Instead run experiments and pick the right ones for your network.
 - Transfer learning can save you a lot of time. From our experiments, we know we can indeed reduce the number of epochs using pre-trained weights. At the same time, we can minimize the bias through fine-tuning with optimizers.
 
-###Next steps
+### Next steps
 
 If we have more time on this project, we would try: 
 
