@@ -10,7 +10,7 @@ We want to classify bird species based on bird images. We tested many different 
 
 ### Dataset
 
-We use the [dataset](!https://www.kaggle.com/c/birds21sp/data) provided on Kaggle.
+We use the [dataset](https://www.kaggle.com/c/birds21sp/data) provided on Kaggle.
 
 The training set contains 555 species of birds, each with around 70 images. In total, the training set contains 38562 images.
 
@@ -82,7 +82,7 @@ We evaluated the effectiveness of the 10-fold cross validation on both Efficient
 | :--------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------: |
 | <img src="graphs/InceptionV4 with no cross validation: Accuracy.png" alt="InceptionV4 with no cross validation: Accuracy" style="zoom:72%;" /> | <img src="graphs/InceptionV4 with no cross validation: Loss.png" alt="InceptionV4 with no cross validation: Loss" style="zoom:72%;" /> |
 
-Both with and without cross validation, Efficient Net has higher accuracy increasing rate and loss decreasing rate compared to Inception V4. We think it's because Efficient Net has more complicated internal structures. For each training epoch, Efficient Net takes 1 hour while Inception V4 takes 30 minutes.
+Both with and without cross validation, Efficient Net has higher training accuracy increasing rate and loss decreasing rate compared to Inception V4. We think it's because Efficient Net has more complicated internal structures. For each training epoch, Efficient Net takes 1 hour while Inception V4 takes 30 minutes.
 
 #### No pre-trained weights
 
@@ -155,7 +155,7 @@ Worked not well:
   - It lead to fluctuating training accuracy.
   - Loss remains high when comparing to other configurations.
 
-Mix
+Mix:
 
 - Repeated 10-fold Cross Validation
   - As shown in the results, it improved test accuracy for InceptionV4 from 65.5% to 74.4%.
@@ -178,4 +178,4 @@ Yes! When new types of training data are available, our code can be used to gene
 
 ### Reference
 
-1. We refer to Joe's [tutorial](!https://www.kaggle.com/pjreddie/transfer-learning-to-birds-with-resnet18).
+1. We refer to Joe's [tutorial](https://www.kaggle.com/pjreddie/transfer-learning-to-birds-with-resnet18).
