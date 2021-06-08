@@ -138,6 +138,7 @@ Here are the test accuracies of the different configurations we tested. Note tha
 Fixed parameters:
 
 - epoch: 20
+- momentum: 0.9
 
 Worked well:
 
