@@ -100,8 +100,6 @@ With no pre-trained weights, it's hard to achieve the same performance as the on
 
 We evaluated the effect of having dropout in the fully connected (FC) layer.
 
-TODO add plots for p = 0.2
-
 |                                                                                                                                                                                |                                                                                                                                                                        |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | <img src="graphs/EfficientNet with cross-validation and dropout p=0.5: Accuracy.png" alt="EfficientNet with cross-validation and dropout p=0.5: Accuracy" style="zoom:72%;" /> | <img src="graphs/EfficientNet with cross-validation and dropout p=0.5: Loss.png" alt="EfficientNet with cross-validation and dropout p=0.5: Loss" style="zoom:72%;" /> |
@@ -110,13 +108,29 @@ TODO add plots for p = 0.2
 | :----------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------: |
 | <img src="graphs/EfficientNet with dropout p=0.5: Accuracy.png" alt="EfficientNet with dropout p=0.5: Accuracy" style="zoom:72%;" /> | <img src="graphs/EfficientNet with dropout p=0.5: Loss.png" alt="EfficientNet with dropout p=0.5: Loss" style="zoom:72%;" /> |
 
-Although using dropout rate achieved 100% training accuracy, it had high training loss and only had 0.1% test accuracy in the end.
+Although using dropout p=0.5 achieved 100% training accuracy, it had high training loss and only had 0.1% test accuracy in the end. This suggests that the dropout p=0.5 might be too high for the FC layer. 
+
+|                                                                                                                                                                                |                                                                                                                                                                        |
+| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| ![EfficientNet with cross-validation and dropout p=0.2: Accuracy](graphs/EfficientNet with cross-validation and dropout p=0.2: Accuracy.png) | ![EfficientNet with cross-validation and dropout p=0.2: Loss](graphs/EfficientNet with cross-validation and dropout p=0.2: Loss.png) |
+
+TODO add p=0.2 no CV
+
+We see that when using dropout p=0.2, the test accuracies are much higher than those using dropout p=0.5. From the accuracy curve, we see that these configurations can indeed help prevent early overfitting. 
 
 #### Weight decay
 
 We evaluated the effect of weight decay of 0.0005.
 
-TODO add plots
+|                                                                                                                                                                                |                                                                                                                                                                        |
+| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| ![EfficientNet with cross-validation and weight decay = 0.0005: Accuracy](graphs/EfficientNet with cross-validation and weight decay = 0.0005: Accuracy.png) | ![EfficientNet with cross-validation and weight decay = 0.0005: Loss](graphs/EfficientNet with cross-validation and weight decay = 0.0005: Loss.png) | 
+
+|                                                                                                                                                                                |                                                                                                                                                                        |
+| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| ![EfficientNet with weight decay = 0.0005: Accuracy](graphs/EfficientNet with weight decay = 0.0005: Accuracy.png) | ![EfficientNet with weight decay = 0.0005: Loss](graphs/EfficientNet with weight decay = 0.0005: Loss.png) |
+
+TODO add comment for weight decay
 
 ## Results
 
@@ -127,9 +141,9 @@ Here are the test accuracies of the different configurations we tested. Note tha
 | InceptionV4                              | 74.4%                         | 65.5%                            |
 | EfficientNetV1                           | 86.9%                         | 89.2%                            |
 | EfficientNetV1, no pre-trained weights   | 37.2%                         | N/T                              |
-| EfficientNetV1, FC layer dropout p = 0.2 | TODO                          | TODO                             |
+| EfficientNetV1, FC layer dropout p = 0.2 | 78.9%                         | TODO                             |
 | EfficientNetV1, FC layer dropout p = 0.5 | 0.1%                          | 0.2%                             |
-| EfficientNetV1, weight decay = 0.0005    | TODO                          | TODO                             |
+| EfficientNetV1, weight decay = 0.0005    | 7.4%                          | 32.2%                            |
 
 ## Discussion
 
@@ -156,7 +170,7 @@ We kept these hyper-parameters constant:
 - Weight decay = 0.0005
   - It lead to fluctuating training accuracy.
   - Loss remains high when comparing to other configurations.
-- We think that these two techniques are not necessarily bad, since the loss curves still show a decreasing pattern as the epochs increase. It just means that when the training time (in terms of epochs) is limited, these two techniques cannot help maximize the accuracy. 
+- We think that these two techniques are not necessarily inappropriate, since the loss curves still show a decreasing pattern as the epochs increase. It just means that when the training time (in terms of epochs) is limited, these two techniques cannot efficiently help maximize the accuracy. 
 
 **Techniques with mixed performance**
 
