@@ -96,7 +96,13 @@ We evaluated the effect of having dropout in the fully connected (FC) layer.
 
 TODO add plots for p = 0.2
 
-TODO add plots for p = 0.5
+<img src="graphs/EfficientNet with cross-validation and dropout p=0.5: Accuracy.png" alt="EfficientNet with cross-validation and dropout p=0.5: Accuracy" style="zoom:72%;" />
+
+<img src="graphs/EfficientNet with cross-validation and dropout p=0.5: Loss.png" alt="EfficientNet with cross-validation and dropout p=0.5: Loss" style="zoom:72%;" />
+
+<img src="graphs/EfficientNet with dropout p=0.5: Accuracy.png" alt="EfficientNet with dropout p=0.5: Accuracy" style="zoom:72%;" />
+
+<img src="graphs/EfficientNet with dropout p=0.5: Loss.png" alt="EfficientNet with dropout p=0.5: Loss" style="zoom:72%;" />
 
 #### Weight decay
 
