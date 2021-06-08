@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 
 log_folder_location = "logs/0.9_per_epoch_decay/"
-file_name = "efficient_net_no_cv_weight_decay_log.txt"
+file_name = "efficient_net_no_cv_dropout_0.2_log.txt"
 
 
 def parse_logs():
@@ -52,7 +52,7 @@ def plot_helper(data_arr, max_epoch, title, y_label):
 if __name__ == '__main__':
     train_acc_logs, validation_acc_logs, train_loss_logs, validation_loss_logs, max_epoch = parse_logs()
     data_arr = [(train_acc_logs, "-o", "train"), (validation_acc_logs, "--o", "validation")]
-    plot_helper(data_arr, max_epoch, "EfficientNet with weight decay = 0.0005: Accuracy", "Accuracy")
+    plot_helper(data_arr, max_epoch, "EfficientNet with no cross-validation and dropout p = 0.2: Accuracy", "Accuracy")
 
     data_arr = [(train_loss_logs, "-o", "train"), (validation_loss_logs, "--o", "validation")]
-    plot_helper(data_arr, max_epoch, "EfficientNet with weight decay = 0.0005: Loss", "Loss")
+    plot_helper(data_arr, max_epoch, "EfficientNet with no cross-validation and dropout p = 0.2: Loss", "Loss")

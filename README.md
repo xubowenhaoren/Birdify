@@ -114,9 +114,11 @@ Although using dropout p=0.5 achieved 100% training accuracy, it had high traini
 | :-------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
 | <img src="graphs/EfficientNet with cross-validation and dropout p=0.2: Accuracy.png" style="zoom:72%;" /> | <img src="graphs/EfficientNet with cross-validation and dropout p=0.2: Loss.png" style="zoom:72%;" /> |
 
-TODO add p=0.2 no CV
+|                                                                                                           |                                                                                                       |
+| :-------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
+| <img src="graphs/EfficientNet with no cross-validation and dropout p = 0.2: Accuracy.png" style="zoom:72%;" /> | <img src="graphs/EfficientNet with no cross-validation and dropout p = 0.2: Loss.png" style="zoom:72%;" /> |
 
-We see that when using dropout p=0.2, the test accuracies are much higher than those using dropout p=0.5. From the accuracy curve, we see that these configurations can indeed help prevent early overfitting.
+We see that when using dropout p=0.2, the test accuracies are much higher than those using dropout p=0.5. From the accuracy curve, we see that this configuration can indeed help prevent early overfitting.
 
 #### Weight decay
 
@@ -141,7 +143,7 @@ Here are the test accuracies of the different configurations we tested. Note tha
 | InceptionV4                              | 74.4%                         | 65.5%                            |
 | EfficientNetV1                           | 86.9%                         | 89.2%                            |
 | EfficientNetV1, no pre-trained weights   | 37.2%                         | N/T                              |
-| EfficientNetV1, FC layer dropout p = 0.2 | 78.9%                         | TODO                             |
+| EfficientNetV1, FC layer dropout p = 0.2 | 78.9%                         | 80.9%                             |
 | EfficientNetV1, FC layer dropout p = 0.5 | 0.1%                          | 0.2%                             |
 | EfficientNetV1, weight decay = 0.0005    | 7.4%                          | 32.2%                            |
 
@@ -177,7 +179,7 @@ We kept these hyper-parameters constant:
 - Repeated 10-fold Cross Validation
   - As shown in the results, it improved test accuracy for InceptionV4 from 65.5% to 74.4%.
   - However, the test accuracy decreased from 89.2% to 86.9% after using repeated 10-fold Cross Validation.
-  - We think that this is a good example indicating that more appealing techniques doesn't equate better performance for every model.
+  - We think that this is a good example indicating that having appealing techniques doesn't guarantee better performance for every model.
 
 ### Conclusion
 
