@@ -1,6 +1,8 @@
 # Birdify
 
-Aiming to be a better bird classification tool
+Aiming to be a better bird classification tool. 
+
+Check out our project video: https://youtu.be/jaE03PImdGM
 
 ## Introduction
 
@@ -165,10 +167,18 @@ Mix:
 ### Conclusion
 
 - The size of the network can have a big impact on the training time. Small networks (such as InceptionV4) require less time for each epoch (when using the same GPU). However, they take more epochs to reduce their loss. Bigger networks (such as EfficientNetV1-B5) require more time for each epoch. For instance, when using the same image resolution (512\*512) and the maximum batch size as the Google Colab GPU permits, a typical EfficientNetV1-B5 epoch requires 60 minutes whereas an InceptionV4 epoch requires only 30 minutes. Nevertheless, Bigger networks requires less epochs to reduce the loss.
-
 - The law of diminishing returns apply to the tuning of hyper-parameters. During the training, we noticed that as we increase the number of epochs and the input resolution, the improvement of the test accuracy decreases.
 - Having more appealing features doesn't always give you better results. Instead run experiments and pick the right ones for your network.
 - Transfer learning can save you a lot of time. From our experiments, we know we can indeed reduce the number of epochs using pre-trained weights. At the same time, we can minimize the bias through fine-tuning with optimizers.
+
+###Next steps
+
+If we have more time on this project, we would try: 
+
+- Changing the momentum
+- Adding more controlled variables to each experiment set
+- Extracting the output layer from our trained EfficientNetV1 model and use it as input for EfficientNetV2
+  - Gain accuracy improvements through state-of-the-art networks
 
 ### Can anything in this project apply more broadly to other projects?
 
@@ -177,6 +187,6 @@ Yes! When new types of training data are available, our code can be used to gene
 - Smart training progress bar. Instead of periodically calculating and predicting the loss, we introduced a smart progress bar that outputs the loss and the current iteration in real time. The current code also computes the training/validation accuracy once every 100 iterations and updates the progress bar.
 - Automatic checkpointing, logging, and recovery. We used Google Colab to train our models. Since Google Colab has very strict usage limits, we've introduced automatic checkpoint recovery in case of GPU downtime. With this feature, our code automatically looks for the most recent checkpoint and automatically resumes the training. We've also added automatic logging to save the training loss and accuracy into an external file so that the relevant information are preserved even across notebook restarts. In our repo, we've also included code to parse the logs and generate the loss and accuracy graphs.
 
-### Reference
+### References
 
-1. We refer to Joe's [tutorial](https://www.kaggle.com/pjreddie/transfer-learning-to-birds-with-resnet18).
+We referred to Joe's [tutorial](https://www.kaggle.com/pjreddie/transfer-learning-to-birds-with-resnet18).
