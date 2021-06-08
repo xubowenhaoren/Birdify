@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 
 log_folder_location = "logs/0.9_per_epoch_decay/"
-file_name = "efficient_net_cv_log.txt"
+file_name = "efficient_net_cv_log_no_pretrain.txt"
 
 
 def parse_logs():
@@ -38,7 +38,8 @@ def plot_helper(data_arr, max_epoch, title, y_label):
     plt.figure(figsize=(10, 7))
     for data in data_arr:
         log_arr, style, m_label = data
-        plt.plot([log[2] for log in log_arr], style, label=m_label)
+        if len(log_arr) > 0:
+            plt.plot([log[2] for log in log_arr], style, label=m_label)
     plt.title(title)
     plt.xticks(range(0, max_epoch + 1, 1))
     plt.xlabel("Epoch")
@@ -51,7 +52,7 @@ def plot_helper(data_arr, max_epoch, title, y_label):
 if __name__ == '__main__':
     train_acc_logs, validation_acc_logs, train_loss_logs, validation_loss_logs, max_epoch = parse_logs()
     data_arr = [(train_acc_logs, "-o", "train"), (validation_acc_logs, "--o", "validation")]
-    plot_helper(data_arr, max_epoch, "EfficientNet, 512*512 resolution, with cross validation: Accuracy", "Accuracy")
+    plot_helper(data_arr, max_epoch, "EfficientNet with no pre-trained weights: Accuracy", "Accuracy")
 
     data_arr = [(train_loss_logs, "-o", "train"), (validation_loss_logs, "--o", "validation")]
-    plot_helper(data_arr, max_epoch, "EfficientNet, 512*512 resolution, with cross validation: Loss", "Loss")
+    plot_helper(data_arr, max_epoch, "EfficientNet with no pre-trained weights: Loss", "Loss")

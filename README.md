@@ -34,7 +34,7 @@ Later in the project, we experimented with other configurations to improve the t
 - Hyper-parameter settings such as the learning rate and the stepwise learning rate decay
 - Using ImageNet pre-trained weights or none 
 - Input resolutions: From 128 * 128 to 600 * 600
-- K-fold cross validation: enabled or none
+- 10-fold cross validation: enabled or none
 - Dropout in the FC layer: none, or p = 0.2, p=0.5
 - Weight decay: none, or 0.0005
 - Adaptive learning rate: decreasing the learning rate at scheduled epochs
@@ -48,41 +48,81 @@ The `resnet18` is a fairly small network by today's standards. Our testing accur
 
 We first tried bigger models in the ResNet family. We tried ResNet50 and ResNet101 at the same 128*128 resolution. The testing accuracy improved to around 70%. At this point, we couldn't specifically deduce whether the bottleneck was the small resolution or the relatively old ResNet network. Thus we ran tests with more modern networks and bigger image resolutions. 
 
-The first bottleneck we met was with InceptionV4. While we were able to obtain 89% accuracy, any further attempts to increase the resolution (and decrease the batch size) resulted in an intolerable training time: over 90 minutes per epoch. We then searched for more recent networks and found EfficientNetV1, one of the top-performing network on the [ImageNet benchmark](https://paperswithcode.com/sota/image-classification-on-imagenet). With 600*600 input resolution, 10-fold cross validation, adaptive learning rate, and stepwise learning rate decrease, we were able to achieve 90.9% accuracy. You may find the full list of hyper-parameters [here](https://github.com/xubowenhaoren/Birdify/blob/9ef7acab532ae4e03923cd53a39b2800f17d1969/efficient_net_challenge.py#L16). 
+The first bottleneck we met was with InceptionV4. While we were able to obtain around 80% accuracy, any further attempts to increase the resolution (and decrease the batch size) resulted in an intolerable training time: over 90 minutes per epoch. We then searched for more recent networks and found EfficientNetV1, one of the top-performing network on the [ImageNet benchmark](https://paperswithcode.com/sota/image-classification-on-imagenet). With 600*600 input resolution, 10-fold cross validation, adaptive learning rate, and stepwise learning rate decrease, we were able to achieve 90.9% accuracy. You may find the full list of hyper-parameters [here](https://github.com/xubowenhaoren/Birdify/blob/9ef7acab532ae4e03923cd53a39b2800f17d1969/efficient_net_challenge.py#L16). 
 
 #### Overfitting
 
-When we evaluate the training accuracy and loss logs of the above configuration, we noticed that the training accuracy reached 100% as early as epoch 1. This suggests overfitting and motivated us to compare the effectiveness of other techniques. Note that due to the time limitations, we limited the input resolution to 512*512. 
-
-- We changed the adaptive learning rate schedule to start with 0.09 instead of 0.01. 
-
-
+When we evaluated the training accuracy and loss logs from the above configuration, we noticed that the training accuracy reached 100% as early as epoch 1. This suggests overfitting and motivated us to compare the effectiveness of other techniques. See the experiments section below for more details. 
 
 #### Transfer learning: Time saver or bias maker?
 
-So far we've trained our bird classifier with only pre-trained weights. However, we understand that the pre-trained weights come from ImageNet, which is a general classification problem. This is very different from our "specialized" bird classifier to differentiate different spices of birds. Did transfer learning introduce big bias that impeded the accuracy? We trained a new model without the ImageNet pre-trained weights. We found that the loss decreased very slowly and the resulting model performed poorly. (See the detailed plots below.) We can indeed same time using pre-trained weights, and minimize the bias through the use of fine-tuning with optimizers. 
-
-### Why did we think this approach was better than other options?
+So far we've trained our bird classifier with only pre-trained weights. However, we understand that the pre-trained weights come from ImageNet, which is a general classification problem. This is very different from our "specialized" bird classifier to differentiate different spices of birds. Did transfer learning introduce big bias that impeded the accuracy? We trained a new model without the ImageNet pre-trained weights. We found that the loss decreased very slowly and the resulting model performed poorly. (See the experiments section below for more details.) Therefore, we didn't use the brand-new EfficientNetV2 to train our bird classifier because there are no pre-trained weights available. 
 
 ## Experiments
 
-- Different models on the same basic hyper-parameter setting: ResNet18, ResNet50, ResNet101, Inception V3, Inception V4, Efficient Net V1-B5.
+Note that due to the time limitations, we limited the input resolution to 512*512. To avoid overfitting, we changed the adaptive learning rate schedule to start with 0.09 instead of 0.01. We also changed the stepwise learning rate decrease ratio from 97.5% to 90%. 
 
-- Diagrams
+#### K-fold cross validation
 
-## Results
+We evaluated the effectiveness of the 10-fold cross validation on both EfficientNetV1 and InceptionV4 through comparing with models of the same network trained without the cross validation. 
 
-### What worked better
+<img src="graphs/EfficientNet with cross validation: Accuracy.png" alt="EfficientNet with cross validation: Accuracy" style="zoom:72%;" />
 
-Cross Validation reduced loss.
+<img src="graphs/EfficientNet with cross validation: Loss.png" alt="EfficientNet with cross validation: Loss" style="zoom:72%;" />
 
-### Maybe have some nice charts and graphs here
+<img src="graphs/EfficientNet with no cross validation: Accuracy.png" alt="EfficientNet with no cross validation: Accuracy" style="zoom:72%;" />
+
+<img src="graphs/EfficientNet with no cross validation: Loss.png" alt="EfficientNet with no cross validation: Loss" style="zoom:72%;" />
+
+<img src="graphs/InceptionV4 with cross validation: Accuracy.png" alt="InceptionV4 with cross validation: Accuracy" style="zoom:72%;" />
+
+<img src="graphs/InceptionV4 with cross validation: Loss.png" alt="InceptionV4 with cross validation: Loss" style="zoom:72%;" />
+
+<img src="graphs/InceptionV4 with no cross validation: Accuracy.png" alt="InceptionV4 with no cross validation: Accuracy" style="zoom:72%;" />
+
+<img src="graphs/InceptionV4 with no cross validation: Loss.png" alt="InceptionV4 with no cross validation: Loss" style="zoom:72%;" />
+
+####No pre-trained weights
+
+We evaluated the bias vs time-saving tradeoff of the transfer learning. 
+
+<img src="graphs/EfficientNet with no pre-trained weights: Accuracy.png" alt="EfficientNet with no pre-trained weights: Accuracy" style="zoom:72%;" />
+
+<img src="graphs/EfficientNet with no pre-trained weights: Loss.png" alt="EfficientNet with no pre-trained weights: Loss" style="zoom:72%;" />
+
+#### FC layer dropout
+
+We evaluated the effect of having dropout in the fully connected (FC) layer. 
+
+TODO add plots for p = 0.2
+
+TODO add plots for p = 0.5
+
+#### Weight decay
+
+We evaluated the effect of weight decay of 0.0005. 
+
+TODO add plots
+
+##Results
+
+Here are the test accuracies of the different configurations we tested. Note that we use N/T to abbreviate "not tested".  Note that when the input resolution is 512*512 unless otherwise specified. 
+
+| Configuration                            | With 10-fold cross validation | Without 10-fold cross validation |
+| ---------------------------------------- | ----------------------------- | -------------------------------- |
+| InceptionV4                              | 74.4%                         | 65.5%                            |
+| EfficientNetV1                           | 86.9%                         | 89.2%                            |
+| EfficientNetV1, no pre-trained weights   | 37.2%                         | N/T                              |
+| EfficientNetV1, FC layer dropout p = 0.2 | TODO                          | TODO                             |
+| EfficientNetV1, FC layer dropout p = 0.5 | 0.1%                          | 0.2%                             |
+| EfficientNetV1, weight decay = 0.0005    | TODO                          | TODO                             |
 
 ## Discussion
 
 ### Evaluation
 
-- What worked well and didn’t and Why do you think that’s the case?
+- What worked well and didn’t and Why do you think that’s the case? Why did we think this approach was better than other options?
+- TODO
 
 ### Conclusion
 
@@ -90,7 +130,7 @@ Cross Validation reduced loss.
 
 - The law of diminishing returns apply to the tuning of hyper-parameters. During the training, we noticed that as we increase the number of epochs and the input resolution, the improvement of the test accuracy decreases. 
 - Having more appealing features doesn't always give you better results. Instead run experiments and pick the right ones for your network. 
-- Transfer learning can save you a lot of time.
+- Transfer learning can save you a lot of time. From our experiments, we know we can indeed reduce the number of epochs using pre-trained weights. At the same time, we can minimize the bias through fine-tuning with optimizers. 
 
 ### Can anything in this project apply more broadly to other projects?
 
