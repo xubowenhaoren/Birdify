@@ -177,11 +177,11 @@ if __name__ == '__main__':
     print("The total effective training epochs are", run_k_fold_times * k_fold_number)
     model, data = get_bird_data()
     checkpoint_path = folder_location + model_type + '.pth'
-    if weight_decay > 0:
-        print("using weight decay", weight_decay)
-        optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=weight_decay)
-    else:
+    if weight_decay == 0:
         optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+    else:
+        print("using weight decay", weight_decay)
+        optimizer = optim.SGD(model.parameters(), lr=0.09, momentum=0.9, weight_decay=weight_decay)
     saved_k_fold_times, saved_k_fold_i = 0, 0
     if os.path.exists(checkpoint_path):
         print("found checkpoint, recovering")
