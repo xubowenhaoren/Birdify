@@ -44,13 +44,14 @@ def plot_helper(data_arr, max_epoch, title, y_label):
     plt.xlabel("Epoch")
     plt.ylabel(y_label)
     plt.legend()
+    plt.savefig("graphs/" + title + ".png")
     plt.show()
 
 
 if __name__ == '__main__':
     train_acc_logs, validation_acc_logs, train_loss_logs, validation_loss_logs, max_epoch = parse_logs()
     data_arr = [(train_acc_logs, "-o", "train"), (validation_acc_logs, "--o", "validation")]
-    plot_helper(data_arr, max_epoch, "EfficientNet, $512^2$ resolution, with cross validation", "Accuracy")
+    plot_helper(data_arr, max_epoch, "EfficientNet, 512*512 resolution, with cross validation: Accuracy", "Accuracy")
 
     data_arr = [(train_loss_logs, "-o", "train"), (validation_loss_logs, "--o", "validation")]
-    plot_helper(data_arr, max_epoch, "EfficientNet, $512^2$ resolution, with cross validation", "Loss")
+    plot_helper(data_arr, max_epoch, "EfficientNet, 512*512 resolution, with cross validation: Loss", "Loss")

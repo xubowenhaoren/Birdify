@@ -24,59 +24,47 @@ Wenqing Lan
 
 ## Approach
 
-### What techniques did you use?
+### What techniques did we use?
 
-We first started the training with the pretrained `resnet18` model. We also used the SGD optimizer and Cross Entropy Loss. (We compared the popular optimizers such as Adam, AdamW, and SGD. [This article](https://towardsdatascience.com/why-adamw-matters-736223f31b5d) shows that the SGD is still the optimizer that produces more generalizable models. Therefore we chose to use the SGD optimizer throughout the project.) Our initial hyper-parameters included epochs = 5, learning rate = 0.01, image resolution 128*128, and momentum = 0.9. We quickly realized that the number of epochs are too limited. We tried to increase the training epochs to see where the test accuracy stops to increase and where the loss stops to decrease. After some more experiments, we've decided that epochs = 20 is a good balance between good accuracy and training time. 
+We first started the training with the pretrained `resnet18` model. We also used the SGD optimizer and Cross Entropy Loss. (We compared the popular optimizers such as Adam, AdamW, and SGD. [This article](https://towardsdatascience.com/why-adamw-matters-736223f31b5d) shows that the SGD is still the optimizer that produces more generalizable models. Therefore we chose to use the SGD optimizer throughout the project.) We started our training with epochs = 5 and image resolution 128*128. We quickly realized that the number of epochs are too limited. We tried to increase the training epochs to see where the test accuracy stops to increase and where the loss stops to decrease. After some more experiments, we've decided that epochs = 20 is a good balance between good accuracy and training time. 
 
 Later in the project, we experimented with other configurations to improve the test accuracy. The configurations include:
 
 - Different models, such as the ResNet18, ResNet50, ResNet101, InceptionV4, and EfficientNetV1-B5
 - Hyper-parameter settings such as the learning rate and the stepwise learning rate decay
 - Using ImageNet pre-trained weights or none 
-- Image resolutions: From 128 * 128 to 600 * 600
+- Input resolutions: From 128 * 128 to 600 * 600
 - K-fold cross validation: enabled or none
 - Dropout in the FC layer: none, or p = 0.2, p=0.5
 - Weight decay: none, or 0.0005
 - Adaptive learning rate: decreasing the learning rate at scheduled epochs
 - Stepwise learning rate decrease: slightly decrease the learning rate at every epoch
 
-### What problems did you run into?
+### What problems did we run into?
 
-#### Bigger is better (to a limit)
+#### Finding the right network
 
 The `resnet18` is a fairly small network by today's standards. Our testing accuracy plateaued at around 60%. To further improve the test accuracy, we then looked for more advanced neural networks and increased the resolution of input images.
 
 We first tried bigger models in the ResNet family. We tried ResNet50 and ResNet101 at the same 128*128 resolution. The testing accuracy improved to around 70%. At this point, we couldn't specifically deduce whether the bottleneck was the small resolution or the relatively old ResNet network. Thus we ran tests with more modern networks and bigger image resolutions. 
 
+The first bottleneck we met was with InceptionV4. While we were able to obtain 89% accuracy, any further attempts to increase the resolution (and decrease the batch size) resulted in an intolerable training time: over 90 minutes per epoch. We then searched for more recent networks and found EfficientNetV1, one of the top-performing network on the [ImageNet benchmark](https://paperswithcode.com/sota/image-classification-on-imagenet). With 600*600 input resolution, 10-fold cross validation, adaptive learning rate, and stepwise learning rate decrease, we were able to achieve 90.9% accuracy. You may find the full list of hyper-parameters [here](https://github.com/xubowenhaoren/Birdify/blob/9ef7acab532ae4e03923cd53a39b2800f17d1969/efficient_net_challenge.py#L16). 
+
+#### Overfitting
+
+When we evaluate the training accuracy and loss logs of the above configuration, we noticed that the training accuracy reached 100% as early as epoch 1. This suggests overfitting and motivated us to compare the effectiveness of other techniques. Note that due to the time limitations, we limited the input resolution to 512*512. 
+
+- We changed the adaptive learning rate schedule to start with 0.09 instead of 0.01. 
 
 
-- Hard-ware limit / Training time limit
 
-  Number of epochs:
+#### Transfer learning: Time saver or bias maker?
 
-  5 -> 35: Loss of Inception V4 decrease to as low as 0.02. 30 mins per epoch.
+So far we've trained our bird classifier with only pre-trained weights. However, we understand that the pre-trained weights come from ImageNet, which is a general classification problem. This is very different from our "specialized" bird classifier to differentiate different spices of birds. Did transfer learning introduce big bias that impeded the accuracy? We trained a new model without the ImageNet pre-trained weights. We found that the loss decreased very slowly and the resulting model performed poorly. (See the detailed plots below.) We can indeed same time using pre-trained weights, and minimize the bias through the use of fine-tuning with optimizers. 
 
-  -> 20: Loss of Efficient Net decrease to as low as 0.006. 60 mins per epoch.
-
-  Resolution of input image: 128 -> 214 -> 300 -> 512 -> 600
-
-- Overfitting
-
-  Training accuracy becomes 100% from the 12th epoch.
-
-  Using different learning rate during different epochs.
-
-- Pre-trained or Not
-
-- Hard to tell if it overfits from the accuracy
-
-### Why did you think this approach was better than other options?
-
-- Using 10-fold cross validation, elaborate loss, accuracy, test accuracy difference
+### Why did we think this approach was better than other options?
 
 ## Experiments
-
-### Try multiple things to see what works better
 
 - Different models on the same basic hyper-parameter setting: ResNet18, ResNet50, ResNet101, Inception V3, Inception V4, Efficient Net V1-B5.
 
@@ -92,14 +80,22 @@ Cross Validation reduced loss.
 
 ## Discussion
 
-### What worked well and didn’t and WHY do you think that’s the case?
+### Evaluation
 
-### Did you learn anything?
+- What worked well and didn’t and Why do you think that’s the case?
 
-We found an empirical rule from the training:
+### Conclusion
 
-- Small networks (such as InceptionV4) require less time for each epoch (when using the same GPU). However, they take more epochs to reduce their loss. 
-- Bigger networks (such as EfficientNetV1-B5) require more time for each epoch. For instance, when using the same image resolution (512*512) and the maximum batch size as the Google Colab GPU permits, a typical EfficientNetV1-B5 epoch requires 60 minutes whereas an InceptionV4 epoch requires only 30 minutes. Nevertheless, Bigger networks requires less epochs to reduce the loss. 
+- The size of the network can have a big impact on the training time. Small networks (such as InceptionV4) require less time for each epoch (when using the same GPU). However, they take more epochs to reduce their loss. Bigger networks (such as EfficientNetV1-B5) require more time for each epoch. For instance, when using the same image resolution (512*512) and the maximum batch size as the Google Colab GPU permits, a typical EfficientNetV1-B5 epoch requires 60 minutes whereas an InceptionV4 epoch requires only 30 minutes. Nevertheless, Bigger networks requires less epochs to reduce the loss. 
+
+- The law of diminishing returns apply to the tuning of hyper-parameters. During the training, we noticed that as we increase the number of epochs and the input resolution, the improvement of the test accuracy decreases. 
+- Having more appealing features doesn't always give you better results. Instead run experiments and pick the right ones for your network. 
+- Transfer learning can save you a lot of time.
 
 ### Can anything in this project apply more broadly to other projects?
+
+Yes! When new types of training data are available, our code can be used to generate other classifier models and are definitely not limited to birds. In addition, we've also added the following features that could be useful to gain insights about the training:
+
+- Smart training progress bar. Instead of periodically calculating and predicting the loss, we introduced a smart progress bar that outputs the loss and the current iteration in real time. The current code also computes the training/validation accuracy once every 100 iterations and updates the progress bar. 
+- Automatic checkpointing, logging, and recovery. We used Google Colab to train our models. Since Google Colab has very strict usage limits, we've introduced automatic checkpoint recovery in case of GPU downtime. With this feature, our code automatically looks for the most recent checkpoint and automatically resumes the training. We've also added automatic logging to save the training loss and accuracy into an external file so that the relevant information are preserved even across notebook restarts. In our repo, we've also included code to parse the logs and generate the loss and accuracy graphs. 
 
